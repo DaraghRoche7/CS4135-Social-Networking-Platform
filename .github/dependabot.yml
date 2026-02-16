@@ -8,9 +8,10 @@ updates:
     open-pull-requests-limit: 5
     reviewers:
       - "team"
-    labels:
-      - "dependencies"
-      - "automated"
+    # Labels will be added after running setup-labels script
+    # labels:
+    #   - "dependencies"
+    #   - "automated"
 
   # Enable version updates for GitHub Actions
   - package-ecosystem: "github-actions"
@@ -20,10 +21,11 @@ updates:
     open-pull-requests-limit: 5
     reviewers:
       - "team"
-    labels:
-      - "dependencies"
-      - "github-actions"
-      - "automated"
+    # Labels will be added after running setup-labels script
+    # labels:
+    #   - "dependencies"
+    #   - "github-actions"
+    #   - "automated"
 
 
 

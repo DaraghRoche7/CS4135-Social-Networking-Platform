@@ -10,6 +10,8 @@ jobs:
   frontend:
     name: Frontend (React)
     runs-on: ubuntu-latest
+    # Skip if frontend directory doesn't exist yet
+    if: ${{ hashFiles('frontend/package.json') != '' }}
     
     steps:
       - name: Checkout code
@@ -41,16 +43,30 @@ jobs:
   backend:
     name: Backend (Spring Boot)
     runs-on: ubuntu-latest
+    # Skip if backend directory doesn't exist yet
+    if: ${{ hashFiles('backend/**/pom.xml') != '' }}
     
     strategy:
       matrix:
         service: [api-gateway, core-service, support-service]
+      # Skip service if it doesn't exist
+      fail-fast: false
     
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
       
+      - name: Check if service exists
+        id: check_service
+        run: |
+          if [ -f "backend/${{ matrix.service }}/pom.xml" ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+      
       - name: Set up JDK 17
+        if: steps.check_service.outputs.exists == 'true'
         uses: actions/setup-java@v4
         with:
           java-version: '17'
@@ -59,11 +75,17 @@ jobs:
           cache-dependency-path: backend/${{ matrix.service }}/pom.xml
       
       - name: Build with Maven
+        if: steps.check_service.outputs.exists == 'true'
         working-directory: ./backend/${{ matrix.service }}
         run: ./mvnw clean verify -DskipTests || mvn clean verify -DskipTests
       
       - name: Run tests
+        if: steps.check_service.outputs.exists == 'true'
         working-directory: ./backend/${{ matrix.service }}
         run: ./mvnw test || mvn test || echo "Tests not configured yet"
+      
+      - name: Service not implemented yet
+        if: steps.check_service.outputs.exists == 'false'
+        run: echo "Service ${{ matrix.service }} not implemented yet - skipping"
 
 

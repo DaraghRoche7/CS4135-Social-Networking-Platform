@@ -1,0 +1,76 @@
+name: PR Checks
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  pr-validation:
+    name: Validate Pull Request
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Check PR title format
+        uses: amannn/action-semantic-pull-request@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          types: |
+            feat
+            fix
+            docs
+            style
+            refactor
+            test
+            chore
+          scopes: |
+            frontend
+            backend
+            api-gateway
+            core-service
+            support-service
+          requireScope: false
+          subjectPattern: ^(?![A-Z]).+$
+          subjectPatternError: |
+            The subject "{subject}" found in the pull request title
+            "{title}" doesn't match the configured pattern. Please
+            ensure that the subject doesn't start with an uppercase
+            character.
+      
+      - name: Check for large files
+        run: |
+          echo "Checking for large files..."
+          # Add check for files > 10MB
+      
+      - name: Validate branch name
+        run: |
+          BRANCH_NAME="${{ github.head_ref }}"
+          if [[ ! "$BRANCH_NAME" =~ ^(feature|fix|bugfix|hotfix)/.+ ]]; then
+            echo "Branch name must start with 'feature/', 'fix/', 'bugfix/', or 'hotfix/'"
+            exit 1
+          fi
+
+  code-quality:
+    name: Code Quality Checks
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Check for TODO/FIXME comments
+        run: |
+          echo "Checking for TODO/FIXME comments..."
+          # grep -r "TODO\|FIXME" --exclude-dir=node_modules . || true
+      
+      - name: Check for console.log statements
+        run: |
+          echo "Checking for console.log statements..."
+          # Add check based on your stack
+
+

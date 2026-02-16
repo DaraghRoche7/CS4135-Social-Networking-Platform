@@ -1,0 +1,9 @@
+# Services directory
+# Each service will be implemented in its own subdirectory:
+# - user-service/
+# - post-service/
+# - feed-service/
+# - notification-service/
+
+
+

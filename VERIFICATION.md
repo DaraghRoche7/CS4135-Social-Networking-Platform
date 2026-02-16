@@ -42,5 +42,5 @@ After verification:
 
 ---
 
-**Status:** Setup complete, ready for development! 🚀
+**Status:** Setup complete, ready for development! 
 

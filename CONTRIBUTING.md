@@ -102,56 +102,26 @@ npm run test:coverage
   - Use comments to communicate blockers or questions
   - Link PRs to Planner tasks when applicable
 
-### Asking Questions
-- Use **Microsoft Planner** for project-related questions and coordination
-- Use GitHub Discussions for technical questions and discussions
-- Use PR comments for code-specific questions
-- Tag team members when needed
-
 ### Reporting Issues
 - Use the bug report template on GitHub
 - Provide clear steps to reproduce
 - Include relevant logs and screenshots
 - Consider creating a task in Microsoft Planner for tracking
 
-## Service-Specific Guidelines
+## GitHub Labels
 
-### User Service
-- Handle authentication securely
-- Hash passwords properly
-- Validate all user inputs
-- Implement rate limiting
+Labels help organize issues and pull requests. See [Labels Setup Guide](../docs/LABELS_SETUP.md) for:
+- How to create labels
+- What labels are available
+- How to use labels effectively
 
-### Post Service
-- Validate post content
-- Handle file uploads securely
-- Implement content moderation hooks
-
-### Feed Service
-- Optimize for performance
-- Use Redis caching effectively
-- Handle fan-out efficiently
-
-### Notification Service
-- Ensure reliable delivery
-- Handle failures gracefully
-- Implement retry logic
+**Quick setup:** Go to Issues → Labels on GitHub and create the labels manually, or run `.\scripts\setup-labels.ps1` if you have GitHub CLI installed.
 
 ## Getting Help
 
 - Check existing documentation
 - Check **Microsoft Planner** for assigned tasks and project updates
 - Search closed issues/PRs
-- Ask in GitHub Discussions
-- Contact team members via Microsoft Planner or GitHub
-
-## Recognition
-
-Contributors will be recognized in:
-- README.md contributors section
-- Release notes
-- Project documentation
-
-Thank you for contributing! 🚀
+- Ask in Groupchat
 
 

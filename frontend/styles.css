@@ -1,0 +1,173 @@
+:root {
+  --color-primary: #18a334;
+  --color-accent: #8dcc99;
+  --color-white: #ffffff;
+
+  --font-family: "Montserrat", "Segoe UI", Arial, sans-serif;
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  --bg: var(--color-white);
+  --surface: #f4fbf6;
+  --text: #10331a;
+  --text-muted: #4d6b55;
+  --border: #c9e7d0;
+  --toolbar-bg: var(--color-primary);
+  --toolbar-text: var(--color-white);
+  --btn-primary-bg: var(--color-primary);
+  --btn-primary-text: var(--color-white);
+  --btn-secondary-bg: transparent;
+  --btn-secondary-text: var(--color-primary);
+}
+
+/* Dark palette hooks are defined now for future toggle support. */
+[data-theme="dark"] {
+  --bg: #101714;
+  --surface: #16211c;
+  --text: #e8f6eb;
+  --text-muted: #b6cfbc;
+  --border: #355642;
+  --toolbar-bg: #0f7e28;
+  --toolbar-text: #f7fff8;
+  --btn-primary-bg: #18a334;
+  --btn-primary-text: #ffffff;
+  --btn-secondary-bg: transparent;
+  --btn-secondary-text: #8dcc99;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-family);
+  background: var(--bg);
+  color: var(--text);
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.9rem 1.5rem;
+  background: var(--toolbar-bg);
+  color: var(--toolbar-text);
+  border-bottom: 1px solid color-mix(in srgb, var(--toolbar-bg), #000 12%);
+}
+
+.toolbar__brand {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-weight: var(--font-weight-bold);
+}
+
+.brand-logo {
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  object-fit: contain;
+}
+
+.toolbar__nav {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.toolbar__link {
+  color: var(--toolbar-text);
+  text-decoration: none;
+  opacity: 0.85;
+  padding: 0.25rem 0.1rem;
+}
+
+.toolbar__link:hover,
+.toolbar__link:focus-visible {
+  opacity: 1;
+}
+
+.toolbar__link--active {
+  opacity: 1;
+  border-bottom: 2px solid var(--color-accent);
+}
+
+.theme-toggle {
+  border: 1px solid color-mix(in srgb, var(--toolbar-text), transparent 40%);
+  background: transparent;
+  color: var(--toolbar-text);
+  border-radius: 8px;
+  padding: 0.45rem 0.65rem;
+  cursor: pointer;
+}
+
+.home {
+  max-width: 1040px;
+  margin: 2rem auto;
+  padding: 0 1.5rem;
+}
+
+.hero-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 2rem;
+}
+
+.eyebrow {
+  margin: 0;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  font-size: 0.82rem;
+  letter-spacing: 0.06rem;
+}
+
+.hero-card h1 {
+  margin: 0.5rem 0 0.8rem;
+}
+
+.hero-card p {
+  max-width: 68ch;
+}
+
+.hero-card__actions {
+  display: flex;
+  gap: 0.8rem;
+  margin-top: 1.25rem;
+}
+
+.btn {
+  border-radius: 10px;
+  padding: 0.6rem 1rem;
+  border: 1px solid transparent;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.btn--primary {
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-text);
+}
+
+.btn--secondary {
+  background: var(--btn-secondary-bg);
+  color: var(--btn-secondary-text);
+  border-color: var(--btn-secondary-text);
+}
+
+@media (max-width: 840px) {
+  .toolbar {
+    flex-wrap: wrap;
+  }
+
+  .toolbar__nav {
+    order: 3;
+    width: 100%;
+    justify-content: center;
+    padding-top: 0.35rem;
+  }
+}

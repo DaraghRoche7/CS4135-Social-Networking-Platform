@@ -1,0 +1,127 @@
+.app-shell {
+  min-height: 100vh;
+}
+
+.page {
+  max-width: 1040px;
+  margin: 2rem auto;
+  padding: 0 1.5rem;
+}
+
+.login-page {
+  max-width: 720px;
+}
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  gap: 1rem;
+}
+
+@media (max-width: 980px) {
+  .grid-2 {
+    grid-template-columns: 1fr;
+  }
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1.25rem;
+}
+
+.login-card {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 1.5rem 1.75rem;
+  border-width: 3px;
+  border-color: var(--border);
+}
+
+.login-card .login-subtitle {
+  text-align: center;
+  font-size: 1.05rem;
+  font-weight: var(--font-weight-semibold);
+}
+
+.login-logo {
+  display: block;
+  width: 86px;
+  height: 86px;
+  margin: 0 auto 0.9rem;
+  border-radius: 999px;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.5rem;
+  margin: 0.75rem 0;
+}
+
+label {
+  font-weight: 600;
+  color: var(--text);
+}
+
+input,
+textarea,
+select {
+  width: 100%;
+  border-radius: 10px;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text);
+}
+
+.login-card input {
+  background: var(--color-white);
+  color: #10331a; /* keep dark text on white inputs */
+}
+
+.login-card input:focus {
+  outline: none;
+  border-color: var(--color-accent);
+}
+
+textarea {
+  min-height: 90px;
+  resize: vertical;
+}
+
+.muted {
+  color: var(--text-muted);
+}
+
+.btn-row {
+  display: flex;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+}
+
+.btn--danger {
+  background: transparent;
+  color: #c0392b;
+  border-color: #c0392b;
+}
+
+.feed-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.feed-item {
+  border-radius: 12px;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface), transparent 10%);
+}
+
+.feed-item h3 {
+  margin: 0 0 0.35rem;
+  font-size: 1.05rem;
+}
+

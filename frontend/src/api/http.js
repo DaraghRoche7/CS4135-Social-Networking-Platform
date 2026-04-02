@@ -23,7 +23,8 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (res) => res,
   (err) => {
-    if (err?.response?.status === 401) {
+    const isAuthEndpoint = err?.config?.url?.startsWith("/api/auth/");
+    if (err?.response?.status === 401 && !isAuthEndpoint) {
       // Session expired: clear local token and send user back to login.
       localStorage.removeItem(TOKEN_KEYS.access);
       localStorage.removeItem("refreshToken");

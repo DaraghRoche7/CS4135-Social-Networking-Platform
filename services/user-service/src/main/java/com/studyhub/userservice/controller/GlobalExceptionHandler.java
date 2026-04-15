@@ -76,4 +76,18 @@ public class GlobalExceptionHandler {
         pd.setTitle("Invalid Reset Token");
         return pd;
     }
+
+    @ExceptionHandler(InvalidEmailDomainException.class)
+    public ProblemDetail handleInvalidEmailDomain(InvalidEmailDomainException ex) {
+        ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        pd.setTitle("Invalid Email Domain");
+        return pd;
+    }
+
+    @ExceptionHandler(InvalidRefreshTokenException.class)
+    public ProblemDetail handleInvalidRefreshToken(InvalidRefreshTokenException ex) {
+        ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, ex.getMessage());
+        pd.setTitle("Invalid Refresh Token");
+        return pd;
+    }
 }

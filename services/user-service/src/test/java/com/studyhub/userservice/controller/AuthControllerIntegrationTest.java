@@ -35,7 +35,7 @@ class AuthControllerIntegrationTest {
         request.setName("Alice Student");
         request.setEmail("alice@studentmail.ul.ie");
         request.setPassword("password123");
-        AuthResponse response = new AuthResponse("jwt-token", UUID.randomUUID(), "Alice Student", "alice@studentmail.ul.ie", "STUDENT");
+        AuthResponse response = new AuthResponse("jwt-token", "refresh-token", UUID.randomUUID(), "Alice Student", "alice@studentmail.ul.ie", "STUDENT");
         when(authService.register(any(RegisterRequest.class))).thenReturn(response);
         mockMvc.perform(post("/api/auth/register").contentType(MediaType.APPLICATION_JSON).content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
@@ -72,7 +72,7 @@ class AuthControllerIntegrationTest {
         request.setEmail("alice@studentmail.ul.ie");
         request.setPassword("password123");
 
-        AuthResponse response = new AuthResponse("jwt-token", UUID.randomUUID(), "Alice", "alice@studentmail.ul.ie", "STUDENT");
+        AuthResponse response = new AuthResponse("jwt-token", "refresh-token", UUID.randomUUID(), "Alice", "alice@studentmail.ul.ie", "STUDENT");
         when(authService.login(any(LoginRequest.class))).thenReturn(response);
         mockMvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON).content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())

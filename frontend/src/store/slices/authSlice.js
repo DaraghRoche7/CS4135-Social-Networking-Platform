@@ -4,7 +4,8 @@ import { api } from "../../api/http.js";
 const TOKEN_KEYS = {
   access: "accessToken",
   refresh: "refreshToken",
-  role: "userRole"
+  role: "userRole",
+  userId: "userId"
 };
 
 function decodeJwtPayload(token) {
@@ -44,6 +45,7 @@ export const register = createAsyncThunk("auth/register", async (credentials, th
 
     const token = data.accessToken || data.access_token || data.token || data.jwt || null;
     const refreshToken = data.refreshToken || data.refresh_token || null;
+    const userId = data.userId || data.user_id || null;
     const role = data.role || data.userRole || roleFromToken(token) || "STUDENT";
 
     if (token) {
@@ -55,8 +57,11 @@ export const register = createAsyncThunk("auth/register", async (credentials, th
     if (role) {
       localStorage.setItem(TOKEN_KEYS.role, role);
     }
+    if (userId) {
+      localStorage.setItem(TOKEN_KEYS.userId, String(userId));
+    }
 
-    return { token, refreshToken, role };
+    return { token, refreshToken, role, userId };
   } catch (err) {
     const errors = err?.response?.data?.errors;
     const message =
@@ -80,6 +85,7 @@ export const login = createAsyncThunk("auth/login", async (credentials, thunkApi
     const refreshToken =
       data.refreshToken || data.refresh_token || null;
 
+    const userId = data.userId || data.user_id || null;
     const role = data.role || data.userRole || roleFromToken(token) || "USER";
 
     if (token) {
@@ -91,11 +97,15 @@ export const login = createAsyncThunk("auth/login", async (credentials, thunkApi
     if (role) {
       localStorage.setItem(TOKEN_KEYS.role, role);
     }
+    if (userId) {
+      localStorage.setItem(TOKEN_KEYS.userId, String(userId));
+    }
 
     return {
       token,
       refreshToken,
-      role
+      role,
+      userId
     };
   } catch (err) {
     const message =
@@ -111,7 +121,8 @@ export const loadAuthFromStorage = createAsyncThunk("auth/load", async () => {
   const token = localStorage.getItem(TOKEN_KEYS.access);
   const refreshToken = localStorage.getItem(TOKEN_KEYS.refresh);
   const role = localStorage.getItem(TOKEN_KEYS.role) || (token ? roleFromToken(token) : null);
-  return { token, refreshToken, role };
+  const userId = localStorage.getItem(TOKEN_KEYS.userId);
+  return { token, refreshToken, role, userId };
 });
 
 const authSlice = createSlice({
@@ -120,6 +131,7 @@ const authSlice = createSlice({
     token: null,
     refreshToken: null,
     role: null,
+    userId: null,
     status: "idle",
     error: null
   },
@@ -128,9 +140,11 @@ const authSlice = createSlice({
       localStorage.removeItem(TOKEN_KEYS.access);
       localStorage.removeItem(TOKEN_KEYS.refresh);
       localStorage.removeItem(TOKEN_KEYS.role);
+      localStorage.removeItem(TOKEN_KEYS.userId);
       state.token = null;
       state.refreshToken = null;
       state.role = null;
+      state.userId = null;
       state.status = "idle";
       state.error = null;
     }
@@ -141,6 +155,7 @@ const authSlice = createSlice({
         state.token = action.payload.token;
         state.refreshToken = action.payload.refreshToken;
         state.role = action.payload.role;
+        state.userId = action.payload.userId;
       })
       .addCase(register.pending, (state) => {
         state.status = "loading";
@@ -151,6 +166,7 @@ const authSlice = createSlice({
         state.token = action.payload.token;
         state.refreshToken = action.payload.refreshToken;
         state.role = action.payload.role;
+        state.userId = action.payload.userId;
       })
       .addCase(register.rejected, (state, action) => {
         state.status = "failed";
@@ -165,6 +181,7 @@ const authSlice = createSlice({
         state.token = action.payload.token;
         state.refreshToken = action.payload.refreshToken;
         state.role = action.payload.role;
+        state.userId = action.payload.userId;
       })
       .addCase(login.rejected, (state, action) => {
         state.status = "failed";

@@ -36,7 +36,7 @@ public class Post {
   private String moduleCode;
 
   @Column(nullable = false)
-  private Long uploaderUserId;
+  private String uploaderUserId;
 
   @Column(nullable = false)
   private Instant createdAt = Instant.now();
@@ -44,5 +44,9 @@ public class Post {
   // Denormalized counter for simple ranking (can be recomputed later).
   @Column(nullable = false)
   private long likeCount = 0;
+
+  /** Stored filename under {@code app.upload.dir}, if this post has an uploaded PDF. */
+  @Column
+  private String attachmentFilename;
 }
 

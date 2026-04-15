@@ -2,7 +2,8 @@ import axios from "axios";
 
 const TOKEN_KEYS = {
   access: "accessToken",
-  refresh: "refreshToken"
+  refresh: "refreshToken",
+  userId: "userId"
 };
 
 export const api = axios.create({
@@ -14,9 +15,15 @@ export const api = axios.create({
 
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem(TOKEN_KEYS.access);
+  const userId = localStorage.getItem(TOKEN_KEYS.userId);
   if (token) {
     config.headers = config.headers || {};
     config.headers.Authorization = `Bearer ${token}`;
+  }
+  // Temporary until gateway injects user identity from JWT.
+  if (userId) {
+    config.headers = config.headers || {};
+    config.headers["X-User-Id"] = userId;
   }
   return config;
 });

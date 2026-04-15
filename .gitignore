@@ -81,5 +81,9 @@ secrets/
 .local/
 local/
 
+# Local test assets (images/docx)
+test-assets/*
+!test-assets/.gitkeep
+
 
 

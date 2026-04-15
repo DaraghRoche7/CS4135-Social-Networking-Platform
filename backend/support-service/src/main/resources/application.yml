@@ -1,0 +1,67 @@
+spring:
+  application:
+    name: support-service
+  datasource:
+    url: ${DB_URL:jdbc:h2:mem:studyhub_support;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE}
+    username: ${DB_USERNAME:sa}
+    password: ${DB_PASSWORD:}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  flyway:
+    enabled: true
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+
+server:
+  port: ${SERVER_PORT:8082}
+  error:
+    include-message: never
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  health:
+    rabbit:
+      enabled: ${APP_MESSAGING_ENABLED:false}
+  info:
+    env:
+      enabled: true
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+
+app:
+  cors:
+    allowed-origins:
+      - http://localhost:5173
+      - http://127.0.0.1:5173
+  core-service:
+    base-url: ${CORE_SERVICE_URL:http://localhost:8081}
+    internal-api-key: ${APP_INTERNAL_API_KEY:change-me-internal-api-key}
+  messaging:
+    enabled: ${APP_MESSAGING_ENABLED:false}
+    exchange: ${APP_EVENTS_EXCHANGE:studyhub.events}
+    login-queue: ${APP_AUTH_LOGIN_QUEUE:studyhub.support.user-login}
+    login-routing-key: ${APP_AUTH_LOGIN_ROUTING_KEY:auth.user.login}
+  security:
+    jwt-secret: ${APP_JWT_SECRET:change-me-local-dev-secret-change-me}
+    allow-demo-token: ${APP_ALLOW_DEMO_TOKEN:false}

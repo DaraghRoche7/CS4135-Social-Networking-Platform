@@ -1,6 +1,0 @@
-target/
-uploads/
-*.jar
-*.war
-*.class
-.mvn/timing.properties

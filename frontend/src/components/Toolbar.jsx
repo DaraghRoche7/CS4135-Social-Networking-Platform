@@ -38,16 +38,21 @@ export function Toolbar() {
   }, [theme]);
 
   const navLinks = useMemo(() => {
-    // The assignments flow is: after login -> student or admin dashboard.
     if (!token) {
       return [{ to: "/login", label: "Login" }];
     }
 
     if (role === "ADMIN") {
-      return [{ to: "/admin", label: "Admin" }];
+      return [
+        { to: "/admin", label: "Admin" },
+        { to: "/notifications", label: "Notifications" }
+      ];
     }
 
-    return [{ to: "/student", label: "Student" }];
+    return [
+      { to: "/student", label: "Student" },
+      { to: "/notifications", label: "Notifications" }
+    ];
   }, [token, role]);
 
   const onLogout = () => {
@@ -107,4 +112,3 @@ export function Toolbar() {
     </header>
   );
 }
-

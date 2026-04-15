@@ -1,0 +1,5 @@
+app:
+  messaging:
+    enabled: false
+  storage:
+    posts-dir: target/test-data/posts

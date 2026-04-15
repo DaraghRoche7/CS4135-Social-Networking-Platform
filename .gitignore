@@ -80,6 +80,7 @@ secrets/
 # Local development
 .local/
 local/
-
+.playwright-cli/
+output/
 
 

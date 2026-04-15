@@ -1,0 +1,5 @@
+app:
+  messaging:
+    enabled: false
+  security:
+    allow-demo-token: false

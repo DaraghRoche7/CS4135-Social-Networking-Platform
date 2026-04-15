@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>StudyHub — Notes</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f0f2f5;
+      color: #1a1a2e;
+      min-height: 100vh;
+    }
+
+    header {
+      background: #1a1a2e;
+      color: #fff;
+      padding: 0 2rem;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 8px rgba(0,0,0,.3);
+    }
+    header h1 { font-size: 1.2rem; letter-spacing: .5px; }
+    header h1 span { color: #6c63ff; }
+
+    #user-bar { display: flex; align-items: center; gap: 1rem; font-size: .85rem; }
+    #user-bar .badge {
+      background: #6c63ff; color: #fff;
+      border-radius: 20px; padding: 3px 12px; font-weight: 600;
+    }
+    #logout-btn {
+      background: transparent; border: 1px solid #555; color: #ccc;
+      border-radius: 6px; padding: 4px 10px; cursor: pointer; font-size: .8rem;
+    }
+    #logout-btn:hover { border-color: #fff; color: #fff; }
+
+    .container { max-width: 960px; margin: 2rem auto; padding: 0 1rem; }
+
+    /* ── Auth card ── */
+    #auth-section {
+      max-width: 420px; margin: 4rem auto;
+      background: #fff; border-radius: 12px;
+      padding: 2rem; box-shadow: 0 4px 20px rgba(0,0,0,.08);
+    }
+    #auth-section h2 { margin-bottom: 1.2rem; font-size: 1.3rem; }
+
+    /* ── Tabs ── */
+    .tabs { display: flex; gap: .5rem; margin-bottom: 1.5rem; }
+    .tab {
+      padding: 8px 18px; border-radius: 8px; border: none;
+      cursor: pointer; font-size: .9rem; font-weight: 500;
+      background: #e8e8f0; color: #555; transition: .15s;
+    }
+    .tab.active { background: #6c63ff; color: #fff; }
+
+    /* ── Cards ── */
+    .card {
+      background: #fff; border-radius: 12px;
+      padding: 1.5rem; box-shadow: 0 2px 10px rgba(0,0,0,.06);
+      margin-bottom: 1.5rem;
+    }
+    .card h2 { font-size: 1rem; margin-bottom: 1rem; color: #333; }
+
+    /* ── Forms ── */
+    .form-row { display: flex; gap: .8rem; flex-wrap: wrap; }
+    .form-group { display: flex; flex-direction: column; gap: 5px; flex: 1; min-width: 180px; }
+    .form-group label { font-size: .8rem; font-weight: 600; color: #555; text-transform: uppercase; letter-spacing: .4px; }
+    .form-group input, .form-group select, .form-group textarea {
+      border: 1px solid #ddd; border-radius: 8px; padding: 8px 12px;
+      font-size: .9rem; outline: none; transition: border-color .15s;
+      font-family: inherit;
+    }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: #6c63ff; }
+    .form-group textarea { resize: vertical; min-height: 70px; }
+    .form-group.full { flex: 100%; min-width: 100%; }
+
+    /* file drop zone */
+    .drop-zone {
+      border: 2px dashed #c0bfe8; border-radius: 10px;
+      padding: 2rem; text-align: center; cursor: pointer;
+      transition: .2s; color: #888; font-size: .9rem;
+    }
+    .drop-zone:hover, .drop-zone.dragover { border-color: #6c63ff; background: #f5f4ff; }
+    .drop-zone input { display: none; }
+    .drop-zone .file-name { margin-top: .5rem; color: #6c63ff; font-weight: 500; }
+
+    /* ── Buttons ── */
+    .btn {
+      padding: 9px 20px; border-radius: 8px; border: none;
+      cursor: pointer; font-size: .9rem; font-weight: 600;
+      transition: .15s;
+    }
+    .btn-primary { background: #6c63ff; color: #fff; }
+    .btn-primary:hover { background: #574fd6; }
+    .btn-primary:disabled { background: #a09cdf; cursor: not-allowed; }
+    .btn-danger { background: #ff4d4d; color: #fff; font-size: .8rem; padding: 5px 12px; }
+    .btn-danger:hover { background: #cc0000; }
+    .btn-outline { background: transparent; border: 1px solid #6c63ff; color: #6c63ff; }
+    .btn-outline:hover { background: #6c63ff; color: #fff; }
+
+    /* ── Search bar ── */
+    .search-bar { display: flex; gap: .6rem; }
+    .search-bar input { flex: 1; border: 1px solid #ddd; border-radius: 8px; padding: 9px 14px; font-size: .9rem; outline: none; }
+    .search-bar input:focus { border-color: #6c63ff; }
+
+    /* ── Note grid ── */
+    #notes-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 1rem;
+    }
+    .note-card {
+      background: #fff; border-radius: 12px; padding: 1.2rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,.07);
+      display: flex; flex-direction: column; gap: .5rem;
+      transition: transform .15s, box-shadow .15s;
+    }
+    .note-card:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0,0,0,.1); }
+    .note-card .note-title { font-weight: 700; font-size: 1rem; color: #1a1a2e; }
+    .note-card .note-module {
+      display: inline-block; background: #eeeeff; color: #6c63ff;
+      border-radius: 20px; padding: 2px 10px; font-size: .75rem; font-weight: 600;
+    }
+    .note-card .note-desc { font-size: .85rem; color: #666; flex: 1; }
+    .note-card .note-meta { font-size: .75rem; color: #999; }
+    .note-card .note-actions { display: flex; gap: .5rem; margin-top: .4rem; flex-wrap: wrap; }
+
+    /* ── Toast ── */
+    #toast {
+      position: fixed; bottom: 2rem; right: 2rem;
+      background: #1a1a2e; color: #fff;
+      padding: .8rem 1.4rem; border-radius: 10px;
+      font-size: .9rem; box-shadow: 0 4px 16px rgba(0,0,0,.25);
+      opacity: 0; transition: opacity .3s; pointer-events: none; z-index: 999;
+    }
+    #toast.show { opacity: 1; }
+    #toast.success { background: #22c55e; }
+    #toast.error   { background: #ef4444; }
+
+    /* ── Empty state ── */
+    .empty { text-align: center; color: #aaa; padding: 3rem 1rem; }
+    .empty svg { width: 60px; opacity: .3; margin-bottom: 1rem; }
+
+    /* ── Spinner ── */
+    .spinner {
+      width: 24px; height: 24px; border: 3px solid #e0e0e0;
+      border-top-color: #6c63ff; border-radius: 50%;
+      animation: spin .6s linear infinite; margin: 2rem auto;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Pagination ── */
+    .pagination { display: flex; gap: .4rem; justify-content: center; margin-top: 1rem; }
+    .page-btn {
+      padding: 5px 12px; border-radius: 6px; border: 1px solid #ddd;
+      cursor: pointer; font-size: .85rem; background: #fff;
+    }
+    .page-btn.active { background: #6c63ff; color: #fff; border-color: #6c63ff; }
+    .page-btn:hover:not(.active) { background: #f0f0ff; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Study<span>Hub</span> — Notes</h1>
+  <div id="user-bar" style="display:none">
+    <span id="username-badge" class="badge"></span>
+    <button id="logout-btn" onclick="logout()">Logout</button>
+  </div>
+</header>
+
+<!-- AUTH -->
+<div id="auth-section">
+  <h2>Sign in (Dev Mode)</h2>
+  <p style="font-size:.85rem;color:#888;margin-bottom:1.2rem">
+    Running locally — get a test JWT token automatically.
+  </p>
+  <div class="form-group" style="margin-bottom:1rem">
+    <label>Username</label>
+    <input id="login-username" value="test-user" />
+  </div>
+  <div class="form-group" style="margin-bottom:1.2rem">
+    <label>Role</label>
+    <select id="login-role">
+      <option value="STUDENT">STUDENT</option>
+      <option value="ADMIN">ADMIN</option>
+    </select>
+  </div>
+  <button class="btn btn-primary" style="width:100%" onclick="devLogin()">Get Token & Continue</button>
+</div>
+
+<!-- MAIN APP -->
+<div id="app-section" style="display:none">
+  <div class="container">
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab active" onclick="showTab('browse', this)">Browse Notes</button>
+      <button class="tab" onclick="showTab('upload', this)">Upload Note</button>
+      <button class="tab" onclick="showTab('my', this)">My Notes</button>
+      <button class="tab" onclick="showTab('search', this)">Search</button>
+    </div>
+
+    <!-- BROWSE -->
+    <div id="tab-browse">
+      <div class="card">
+        <h2>Browse by Module</h2>
+        <div class="form-row" style="align-items:flex-end">
+          <div class="form-group">
+            <label>Module Code</label>
+            <input id="browse-module" placeholder="e.g. CS4135" />
+          </div>
+          <div class="form-group">
+            <label>Sort By</label>
+            <select id="browse-sort">
+              <option value="RECENT">Most Recent</option>
+              <option value="POPULAR">Most Popular</option>
+            </select>
+          </div>
+          <button class="btn btn-primary" onclick="browseModule()">Load</button>
+          <button class="btn btn-outline" onclick="loadAllNotes()">All Notes</button>
+        </div>
+      </div>
+      <div id="browse-results"></div>
+    </div>
+
+    <!-- UPLOAD -->
+    <div id="tab-upload" style="display:none">
+      <div class="card">
+        <h2>Upload a Note (PDF only, max 10 MB)</h2>
+        <div class="form-row">
+          <div class="form-group full">
+            <label>Title</label>
+            <input id="up-title" placeholder="e.g. Week 3 Lecture Notes" />
+          </div>
+          <div class="form-group full">
+            <label>Description</label>
+            <textarea id="up-desc" placeholder="Brief description of the content…"></textarea>
+          </div>
+          <div class="form-group">
+            <label>Module Code</label>
+            <input id="up-module-code" placeholder="CS4135" />
+          </div>
+          <div class="form-group">
+            <label>Module Name</label>
+            <input id="up-module-name" placeholder="Software Architectures" />
+          </div>
+          <div class="form-group full">
+            <label>PDF File</label>
+            <div class="drop-zone" id="drop-zone" onclick="document.getElementById('up-file').click()"
+                 ondragover="event.preventDefault();this.classList.add('dragover')"
+                 ondragleave="this.classList.remove('dragover')"
+                 ondrop="handleDrop(event)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#6c63ff" stroke-width="2" width="36">
+                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+                <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+              </svg>
+              <div>Click or drag & drop a PDF here</div>
+              <div class="file-name" id="file-name-label"></div>
+              <input type="file" id="up-file" accept=".pdf,application/pdf" onchange="fileSelected(this)" />
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:1.2rem">
+          <button class="btn btn-primary" id="upload-btn" onclick="uploadNote()">Upload Note</button>
+        </div>
+        <div id="upload-progress" style="margin-top:.8rem;font-size:.85rem;color:#666"></div>
+      </div>
+    </div>
+
+    <!-- MY NOTES -->
+    <div id="tab-my" style="display:none">
+      <div class="card" style="padding:1rem 1.5rem">
+        <h2>My Uploaded Notes</h2>
+      </div>
+      <div id="my-results"></div>
+    </div>
+
+    <!-- SEARCH -->
+    <div id="tab-search" style="display:none">
+      <div class="card">
+        <h2>Search Notes by Title</h2>
+        <div class="search-bar">
+          <input id="search-query" placeholder="Search…" onkeydown="if(event.key==='Enter')doSearch()" />
+          <button class="btn btn-primary" onclick="doSearch()">Search</button>
+        </div>
+      </div>
+      <div id="search-results"></div>
+    </div>
+
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+  const BASE = '';
+  let token = null;
+  let currentUserId = null;
+
+  /* ── Auth ── */
+  async function devLogin() {
+    const username = document.getElementById('login-username').value.trim() || 'test-user';
+    const role = document.getElementById('login-role').value;
+    try {
+      const res = await fetch(`${BASE}/api/dev/token?username=${encodeURIComponent(username)}&role=${role}`);
+      const data = await res.json();
+      token = data.token;
+      currentUserId = data.userId;
+      document.getElementById('auth-section').style.display = 'none';
+      document.getElementById('app-section').style.display = 'block';
+      document.getElementById('user-bar').style.display = 'flex';
+      document.getElementById('username-badge').textContent = username + ' (' + role + ')';
+      loadAllNotes();
+      toast('Signed in as ' + username, 'success');
+    } catch (e) {
+      toast('Could not reach the server', 'error');
+    }
+  }
+
+  function logout() {
+    token = null; currentUserId = null;
+    document.getElementById('auth-section').style.display = 'block';
+    document.getElementById('app-section').style.display = 'none';
+    document.getElementById('user-bar').style.display = 'none';
+  }
+
+  /* ── Tabs ── */
+  function showTab(name, btn) {
+    document.querySelectorAll('[id^="tab-"]').forEach(el => el.style.display = 'none');
+    document.getElementById('tab-' + name).style.display = 'block';
+    document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    if (name === 'my') loadMyNotes();
+  }
+
+  /* ── API helpers ── */
+  async function apiFetch(url, opts = {}) {
+    const headers = { ...(opts.headers || {}) };
+    if (token) headers['Authorization'] = 'Bearer ' + token;
+    if (!(opts.body instanceof FormData)) headers['Content-Type'] = 'application/json';
+    const res = await fetch(BASE + url, { ...opts, headers });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ message: res.statusText }));
+      throw new Error(err.message || res.statusText);
+    }
+    return res;
+  }
+
+  /* ── Browse / All ── */
+  async function loadAllNotes() {
+    const el = document.getElementById('browse-results');
+    el.innerHTML = '<div class="spinner"></div>';
+    try {
+      const res = await apiFetch('/api/notes?page=0&size=20');
+      const data = await res.json();
+      renderNotes(el, data.content || data);
+    } catch (e) { el.innerHTML = `<p class="empty">Error: ${e.message}</p>`; }
+  }
+
+  async function browseModule() {
+    const code = document.getElementById('browse-module').value.trim();
+    const sort = document.getElementById('browse-sort').value;
+    if (!code) { toast('Enter a module code', 'error'); return; }
+    const el = document.getElementById('browse-results');
+    el.innerHTML = '<div class="spinner"></div>';
+    try {
+      const res = await apiFetch(`/api/notes/module/${encodeURIComponent(code)}?sortBy=${sort}&page=0&size=20`);
+      const data = await res.json();
+      renderNotes(el, data.content || data);
+    } catch (e) { el.innerHTML = `<p class="empty">Error: ${e.message}</p>`; }
+  }
+
+  /* ── My Notes ── */
+  async function loadMyNotes() {
+    const el = document.getElementById('my-results');
+    el.innerHTML = '<div class="spinner"></div>';
+    try {
+      const res = await apiFetch('/api/notes/my?page=0&size=20');
+      const data = await res.json();
+      renderNotes(el, data.content || data, true);
+    } catch (e) { el.innerHTML = `<p class="empty">Error: ${e.message}</p>`; }
+  }
+
+  /* ── Search ── */
+  async function doSearch() {
+    const q = document.getElementById('search-query').value.trim();
+    if (!q) return;
+    const el = document.getElementById('search-results');
+    el.innerHTML = '<div class="spinner"></div>';
+    try {
+      const res = await apiFetch(`/api/notes/search?q=${encodeURIComponent(q)}&page=0&size=20`);
+      const data = await res.json();
+      renderNotes(el, data.content || data);
+    } catch (e) { el.innerHTML = `<p class="empty">Error: ${e.message}</p>`; }
+  }
+
+  /* ── Upload ── */
+  function fileSelected(input) {
+    const f = input.files[0];
+    document.getElementById('file-name-label').textContent = f ? f.name : '';
+  }
+
+  function handleDrop(e) {
+    e.preventDefault();
+    document.getElementById('drop-zone').classList.remove('dragover');
+    const f = e.dataTransfer.files[0];
+    if (f) {
+      const input = document.getElementById('up-file');
+      const dt = new DataTransfer();
+      dt.items.add(f);
+      input.files = dt.files;
+      document.getElementById('file-name-label').textContent = f.name;
+    }
+  }
+
+  async function uploadNote() {
+    const title = document.getElementById('up-title').value.trim();
+    const desc = document.getElementById('up-desc').value.trim();
+    const moduleCode = document.getElementById('up-module-code').value.trim();
+    const moduleName = document.getElementById('up-module-name').value.trim();
+    const fileInput = document.getElementById('up-file');
+    const file = fileInput.files[0];
+
+    if (!title || !moduleCode || !file) {
+      toast('Title, module code and file are required', 'error'); return;
+    }
+
+    const btn = document.getElementById('upload-btn');
+    btn.disabled = true;
+    btn.textContent = 'Uploading…';
+
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('title', title);
+    fd.append('description', desc);
+    fd.append('moduleCode', moduleCode);
+    if (moduleName) fd.append('moduleName', moduleName);
+
+    try {
+      const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
+      const res = await fetch(`${BASE}/api/notes`, { method: 'POST', headers, body: fd });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ message: res.statusText }));
+        throw new Error(err.message || res.statusText);
+      }
+      const note = await res.json();
+      toast('Note uploaded: ' + note.title, 'success');
+      document.getElementById('up-title').value = '';
+      document.getElementById('up-desc').value = '';
+      document.getElementById('up-module-code').value = '';
+      document.getElementById('up-module-name').value = '';
+      fileInput.value = '';
+      document.getElementById('file-name-label').textContent = '';
+    } catch (e) {
+      toast('Upload failed: ' + e.message, 'error');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Upload Note';
+    }
+  }
+
+  /* ── Delete ── */
+  async function deleteNote(id) {
+    if (!confirm('Delete this note?')) return;
+    try {
+      await apiFetch(`/api/notes/${id}`, { method: 'DELETE' });
+      toast('Note deleted', 'success');
+      loadMyNotes();
+    } catch (e) { toast('Delete failed: ' + e.message, 'error'); }
+  }
+
+  /* ── Download ── */
+  async function downloadNote(id, fileName) {
+    try {
+      const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
+      const res = await fetch(`${BASE}/api/notes/${id}/download`, { headers });
+      if (!res.ok) throw new Error(res.statusText);
+      const blob = await res.blob();
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = fileName || 'note.pdf';
+      a.click();
+      URL.revokeObjectURL(a.href);
+      toast('Downloading…', 'success');
+    } catch (e) { toast('Download failed: ' + e.message, 'error'); }
+  }
+
+  /* ── Render helpers ── */
+  function renderNotes(container, notes, showDelete = false) {
+    if (!notes || notes.length === 0) {
+      container.innerHTML = `
+        <div class="empty">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414A1 1 0 0121 9.414V19a2 2 0 01-2 2z"/>
+          </svg>
+          <p>No notes found</p>
+        </div>`;
+      return;
+    }
+    container.innerHTML = `<div id="notes-grid">${notes.map(n => noteCard(n, showDelete)).join('')}</div>`;
+  }
+
+  function noteCard(n, showDelete) {
+    const size = n.fileSize ? (n.fileSize / 1024).toFixed(1) + ' KB' : '';
+    const date = n.createdAt ? new Date(n.createdAt).toLocaleDateString() : '';
+    const isOwner = showDelete && n.uploaderId === currentUserId;
+    return `
+      <div class="note-card">
+        <div class="note-title">${esc(n.title)}</div>
+        <span class="note-module">${esc(n.moduleCode)}</span>
+        ${n.moduleName ? `<div style="font-size:.8rem;color:#888">${esc(n.moduleName)}</div>` : ''}
+        <div class="note-desc">${esc(n.description || '')}</div>
+        <div class="note-meta">${size ? size + ' · ' : ''}${n.downloadCount || 0} downloads · ${date}</div>
+        <div class="note-actions">
+          <button class="btn btn-outline" style="font-size:.8rem;padding:5px 12px"
+            onclick="downloadNote('${n.id}', '${esc(n.fileName || 'note.pdf')}')">Download PDF</button>
+          ${(showDelete || n.uploaderId === currentUserId) ?
+            `<button class="btn btn-danger" onclick="deleteNote('${n.id}')">Delete</button>` : ''}
+        </div>
+      </div>`;
+  }
+
+  function esc(s) {
+    return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  /* ── Toast ── */
+  let toastTimer;
+  function toast(msg, type = '') {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.className = 'show ' + type;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.className = '', 3000);
+  }
+</script>
+</body>
+</html>

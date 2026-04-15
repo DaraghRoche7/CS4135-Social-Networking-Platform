@@ -19,7 +19,7 @@ Mapped out the like/unlike flow to figure out what events we need, what can go w
 | 1 | **Actor** | Student (authenticated, JWT in request) |
 | 2 | **Command** | `LikePost(postId)` |
 | 3 | **Policy** | Extract userId from JWT |
-| 4 | **Policy** | Verify post exists — call Notes service (ACL). If down: 503 fallback |
+| 4 | **Policy** | Verify post exists — call Notes service (ACL). If down: circuit breaker fallback assumes post exists and proceeds |
 | 5 | **Policy** | Check (postId, userId) not already in Likes table |
 | 6 | **Event** | `PostLikedEvent { likeId, postId, userId, timestamp }` |
 | 7 | **Read Model** | Like count for post incremented |
@@ -91,7 +91,7 @@ Routing keys: `interaction.post.liked`, `interaction.post.unliked`
 
 | Hotspot | Resolution |
 |---------|-----------|
-| Notes service is down during LikePost | Resilience4j circuit breaker → fallback returns 503 Service Unavailable |
+| Notes service is down during LikePost | Resilience4j circuit breaker → fallback assumes post exists and proceeds (availability over strict consistency) |
 | Concurrent duplicate like requests | DB unique constraint catches the second one |
 | Should like count be cached? | Out of scope for this context — Feed service can cache aggregate counts if needed |
 | Should we expose who liked a post (list of users)? | Not required for MVP — only count + likedByMe flag needed |

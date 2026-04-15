@@ -27,7 +27,7 @@ export default function App() {
         <Route
           path="/student"
           element={
-            <RequireAuth role="USER">
+            <RequireAuth role="STUDENT">
               <StudentDashboard />
             </RequireAuth>
           }

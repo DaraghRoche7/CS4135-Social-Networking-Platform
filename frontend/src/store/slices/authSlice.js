@@ -36,31 +36,6 @@ function roleFromToken(token) {
   );
 }
 
-export const register = createAsyncThunk("auth/register", async (credentials, thunkApi) => {
-  try {
-    const res = await api.post("/api/auth/register", credentials);
-    const data = res.data ?? res;
-
-    const token = data.accessToken || data.access_token || data.token || data.jwt || null;
-    const role = data.role || data.userRole || roleFromToken(token) || "STUDENT";
-
-    if (token) {
-      localStorage.setItem(TOKEN_KEYS.access, token);
-    }
-
-    return { token, role };
-  } catch (err) {
-    const errors = err?.response?.data?.errors;
-    const message =
-      errors ? Object.values(errors).join(", ") :
-      err?.response?.data?.detail ||
-      err?.response?.data?.message ||
-      err?.message ||
-      "Registration failed";
-    return thunkApi.rejectWithValue(message);
-  }
-});
-
 export const login = createAsyncThunk("auth/login", async (credentials, thunkApi) => {
   try {
     const res = await api.post("/api/auth/login", credentials);
@@ -109,6 +84,7 @@ const authSlice = createSlice({
     token: null,
     refreshToken: null,
     role: null,
+    hydrated: false,
     status: "idle",
     error: null
   },
@@ -119,6 +95,7 @@ const authSlice = createSlice({
       state.token = null;
       state.refreshToken = null;
       state.role = null;
+      state.hydrated = true;
       state.status = "idle";
       state.error = null;
     }
@@ -129,19 +106,7 @@ const authSlice = createSlice({
         state.token = action.payload.token;
         state.refreshToken = action.payload.refreshToken;
         state.role = action.payload.role;
-      })
-      .addCase(register.pending, (state) => {
-        state.status = "loading";
-        state.error = null;
-      })
-      .addCase(register.fulfilled, (state, action) => {
-        state.status = "succeeded";
-        state.token = action.payload.token;
-        state.role = action.payload.role;
-      })
-      .addCase(register.rejected, (state, action) => {
-        state.status = "failed";
-        state.error = action.payload || "Registration failed";
+        state.hydrated = true;
       })
       .addCase(login.pending, (state) => {
         state.status = "loading";
@@ -152,14 +117,15 @@ const authSlice = createSlice({
         state.token = action.payload.token;
         state.refreshToken = action.payload.refreshToken;
         state.role = action.payload.role;
+        state.hydrated = true;
       })
       .addCase(login.rejected, (state, action) => {
         state.status = "failed";
         state.error = action.payload || "Login failed";
+        state.hydrated = true;
       });
   }
 });
 
 export const { logout } = authSlice.actions;
 export default authSlice.reducer;
-

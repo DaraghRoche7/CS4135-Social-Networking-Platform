@@ -6,11 +6,9 @@ import { Toolbar } from "./components/Toolbar.jsx";
 import { RequireAuth } from "./routes/RequireAuth.jsx";
 import { RootRedirect } from "./pages/Root.jsx";
 import { Login } from "./pages/Login.jsx";
-import { Register } from "./pages/Register.jsx";
-import { ForgotPassword } from "./pages/ForgotPassword.jsx";
-import { ResetPassword } from "./pages/ResetPassword.jsx";
 import { StudentDashboard } from "./pages/StudentDashboard.jsx";
 import { AdminDashboard } from "./pages/AdminDashboard.jsx";
+import { NotificationsPage } from "./pages/Notifications.jsx";
 
 export default function App() {
   const dispatch = useDispatch();
@@ -25,9 +23,6 @@ export default function App() {
       <Routes>
         <Route path="/" element={<RootRedirect />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/reset-password" element={<ResetPassword />} />
 
         <Route
           path="/student"
@@ -47,9 +42,17 @@ export default function App() {
           }
         />
 
+        <Route
+          path="/notifications"
+          element={
+            <RequireAuth>
+              <NotificationsPage />
+            </RequireAuth>
+          }
+        />
+
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </>
   );
 }
-

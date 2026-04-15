@@ -141,7 +141,11 @@ GET    /api/posts/{postId}/likes   →  get like count + likedByCurrentUser flag
 
 ---
 
-## UML Class Diagram (PlantUML)
+## UML Class Diagram
+
+![Interaction Context UML](interaction-uml.png)
+
+### PlantUML Source
 
 ```plantuml
 @startuml Interaction-Context

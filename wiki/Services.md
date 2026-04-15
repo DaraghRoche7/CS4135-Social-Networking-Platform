@@ -68,5 +68,31 @@ This document outlines the planned services and their responsibilities.
 
 ---
 
+## Interaction Service
+
+### Responsibilities
+- Like and unlike posts/notes
+- Retrieve like counts and whether the current user has liked a given post
+- Publish domain events (PostLikedEvent, PostUnlikedEvent) to RabbitMQ for downstream consumers
+
+### Owner
+Nur Alislam Kastiro (22331549)
+
+### Technology Stack
+- Spring Boot 3.x
+- Spring Data JPA with PostgreSQL (schema: `interaction`)
+- Spring AMQP (RabbitMQ) for event publishing
+- Resilience4j for circuit breaker on Notes service calls
+- Spring Security with JWT validation
+
+### Key Features
+- POST/DELETE `/api/posts/{postId}/like` — like and unlike endpoints
+- GET `/api/posts/{postId}/likes` — like count + likedByCurrentUser flag
+- Duplicate like prevention enforced at service and DB level
+- Inter-context ACL: verifies post existence via Notes service before recording a like
+- Circuit breaker: falls back gracefully if Notes service is unavailable
+
+---
+
 **Status:** Planned - Service responsibilities will be refined during implementation.
 

@@ -41,6 +41,11 @@ This document describes the planned API contract structure for the Social Networ
 - `POST /api/posts/{id}/like` - Like a post
 - `DELETE /api/posts/{id}/like` - Unlike a post
 
+### Interaction Endpoints (Interaction Service)
+- `POST /api/posts/{id}/like` - Like a post (returns 201, or 409 if already liked)
+- `DELETE /api/posts/{id}/like` - Unlike a post (returns 204, or 404 if not liked)
+- `GET /api/posts/{id}/likes` - Get like count and likedByCurrentUser flag
+
 ### Feed Endpoints (Support Service)
 - `GET /api/feed` - Get user's personalized feed
 - `GET /api/feed/timeline` - Get timeline feed

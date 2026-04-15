@@ -33,6 +33,9 @@ public class User {
     @Column(name = "modules", length = 500)
     private String modules;
 
+    @Column(name = "refresh_token", unique = true)
+    private String refreshToken;
+
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "role_id", nullable = false)
     private Role role;
@@ -56,6 +59,8 @@ public class User {
     public void setYear(Integer year) { this.year = year; }
     public String getModules() { return modules; }
     public void setModules(String modules) { this.modules = modules; }
+    public String getRefreshToken() { return refreshToken; }
+    public void setRefreshToken(String refreshToken) { this.refreshToken = refreshToken; }
     public Role getRole() { return role; }
     public void setRole(Role role) { this.role = role; }
     public LocalDateTime getCreatedAt() { return createdAt; }

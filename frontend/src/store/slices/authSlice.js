@@ -3,7 +3,8 @@ import { api } from "../../api/http.js";
 
 const TOKEN_KEYS = {
   access: "accessToken",
-  refresh: "refreshToken"
+  refresh: "refreshToken",
+  role: "userRole"
 };
 
 function decodeJwtPayload(token) {
@@ -36,6 +37,38 @@ function roleFromToken(token) {
   );
 }
 
+export const register = createAsyncThunk("auth/register", async (credentials, thunkApi) => {
+  try {
+    const res = await api.post("/api/auth/register", credentials);
+    const data = res.data ?? res;
+
+    const token = data.accessToken || data.access_token || data.token || data.jwt || null;
+    const refreshToken = data.refreshToken || data.refresh_token || null;
+    const role = data.role || data.userRole || roleFromToken(token) || "STUDENT";
+
+    if (token) {
+      localStorage.setItem(TOKEN_KEYS.access, token);
+    }
+    if (refreshToken) {
+      localStorage.setItem(TOKEN_KEYS.refresh, refreshToken);
+    }
+    if (role) {
+      localStorage.setItem(TOKEN_KEYS.role, role);
+    }
+
+    return { token, refreshToken, role };
+  } catch (err) {
+    const errors = err?.response?.data?.errors;
+    const message =
+      errors ? Object.values(errors).join(", ") :
+      err?.response?.data?.detail ||
+      err?.response?.data?.message ||
+      err?.message ||
+      "Registration failed";
+    return thunkApi.rejectWithValue(message);
+  }
+});
+
 export const login = createAsyncThunk("auth/login", async (credentials, thunkApi) => {
   try {
     const res = await api.post("/api/auth/login", credentials);
@@ -54,6 +87,9 @@ export const login = createAsyncThunk("auth/login", async (credentials, thunkApi
     }
     if (refreshToken) {
       localStorage.setItem(TOKEN_KEYS.refresh, refreshToken);
+    }
+    if (role) {
+      localStorage.setItem(TOKEN_KEYS.role, role);
     }
 
     return {
@@ -74,7 +110,7 @@ export const login = createAsyncThunk("auth/login", async (credentials, thunkApi
 export const loadAuthFromStorage = createAsyncThunk("auth/load", async () => {
   const token = localStorage.getItem(TOKEN_KEYS.access);
   const refreshToken = localStorage.getItem(TOKEN_KEYS.refresh);
-  const role = token ? roleFromToken(token) || "USER" : null;
+  const role = localStorage.getItem(TOKEN_KEYS.role) || (token ? roleFromToken(token) : null);
   return { token, refreshToken, role };
 });
 
@@ -91,6 +127,7 @@ const authSlice = createSlice({
     logout: (state) => {
       localStorage.removeItem(TOKEN_KEYS.access);
       localStorage.removeItem(TOKEN_KEYS.refresh);
+      localStorage.removeItem(TOKEN_KEYS.role);
       state.token = null;
       state.refreshToken = null;
       state.role = null;
@@ -104,6 +141,20 @@ const authSlice = createSlice({
         state.token = action.payload.token;
         state.refreshToken = action.payload.refreshToken;
         state.role = action.payload.role;
+      })
+      .addCase(register.pending, (state) => {
+        state.status = "loading";
+        state.error = null;
+      })
+      .addCase(register.fulfilled, (state, action) => {
+        state.status = "succeeded";
+        state.token = action.payload.token;
+        state.refreshToken = action.payload.refreshToken;
+        state.role = action.payload.role;
+      })
+      .addCase(register.rejected, (state, action) => {
+        state.status = "failed";
+        state.error = action.payload || "Registration failed";
       })
       .addCase(login.pending, (state) => {
         state.status = "loading";

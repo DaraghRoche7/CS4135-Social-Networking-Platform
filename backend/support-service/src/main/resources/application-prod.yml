@@ -1,0 +1,11 @@
+app:
+  messaging:
+    enabled: true
+  security:
+    allow-demo-token: false
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false

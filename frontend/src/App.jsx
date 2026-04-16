@@ -8,6 +8,7 @@ import { RootRedirect } from "./pages/Root.jsx";
 import { Login } from "./pages/Login.jsx";
 import { StudentDashboard } from "./pages/StudentDashboard.jsx";
 import { AdminDashboard } from "./pages/AdminDashboard.jsx";
+import { NotificationsPage } from "./pages/Notifications.jsx";
 
 export default function App() {
   const dispatch = useDispatch();
@@ -26,7 +27,7 @@ export default function App() {
         <Route
           path="/student"
           element={
-            <RequireAuth role="USER">
+            <RequireAuth role="STUDENT">
               <StudentDashboard />
             </RequireAuth>
           }
@@ -41,9 +42,17 @@ export default function App() {
           }
         />
 
+        <Route
+          path="/notifications"
+          element={
+            <RequireAuth>
+              <NotificationsPage />
+            </RequireAuth>
+          }
+        />
+
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </>
   );
 }
-

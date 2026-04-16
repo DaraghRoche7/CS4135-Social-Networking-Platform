@@ -2,6 +2,7 @@ package ie.ul.studyhub.support.web;
 
 import ie.ul.studyhub.support.service.FeedService;
 import ie.ul.studyhub.support.service.dto.FeedResponseDto;
+import ie.ul.studyhub.support.util.ModuleCodes;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -25,14 +26,16 @@ public class FeedController {
   @GetMapping("/api/feed")
   @ResponseStatus(HttpStatus.OK)
   public FeedResponseDto getFeed(
-      @RequestHeader(name = "X-User-Id", required = false) Long userId,
+      @RequestHeader(name = "X-User-Id", required = false) String userId,
       @RequestParam(name = "module", required = false) String moduleCode,
       @RequestParam(name = "page", defaultValue = "0") int page,
       @RequestParam(name = "size", defaultValue = "20") int size) {
-    if (userId == null || userId <= 0) {
+    if (userId == null || userId.isBlank()) {
       throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Missing X-User-Id");
     }
-    return feedService.getFeed(userId, moduleCode, page, size);
+    String module =
+        moduleCode == null || moduleCode.isBlank() ? null : ModuleCodes.normalize(moduleCode);
+    return feedService.getFeed(userId, module, page, size);
   }
 }
 

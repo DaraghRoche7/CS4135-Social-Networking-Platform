@@ -33,7 +33,7 @@ public class PostLike {
   private Long postId;
 
   @Column(nullable = false)
-  private Long userId;
+  private String userId;
 
   @Column(nullable = false)
   private Instant createdAt = Instant.now();

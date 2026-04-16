@@ -83,4 +83,8 @@ local/
 .playwright-cli/
 output/
 
+# Local test assets (images/docx)
+test-assets/*
+!test-assets/.gitkeep
+
 

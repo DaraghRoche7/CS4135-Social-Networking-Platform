@@ -29,7 +29,7 @@ public class PostComment {
   private Long postId;
 
   @Column(nullable = false)
-  private Long userId;
+  private String userId;
 
   @Column(nullable = false, length = 4000)
   private String body;

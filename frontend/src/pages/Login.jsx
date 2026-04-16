@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { useEffect } from "react";
 import { login } from "../store/slices/authSlice.js";
 import roundLogo from "../../images/round-logo.png";
 
@@ -23,6 +24,7 @@ export function Login() {
     }
   };
 
+  // If we already have a role, redirect automatically.
   useEffect(() => {
     if (!role) return;
     navigate(role === "ADMIN" ? "/admin" : "/student", { replace: true });
@@ -74,21 +76,9 @@ export function Login() {
               {status === "loading" ? "Logging in..." : "Login"}
             </button>
           </div>
-
-          <p className="muted" style={{ textAlign: "center", marginTop: "0.75rem", fontSize: "0.9rem" }}>
-            <Link to="/forgot-password" style={{ color: "var(--color-primary)" }}>
-              Forgot password?
-            </Link>
-          </p>
         </form>
-
-        <p className="muted" style={{ textAlign: "center", marginTop: "1rem", fontSize: "0.9rem" }}>
-          Don&apos;t have an account?{" "}
-          <Link to="/register" style={{ color: "var(--color-primary)", fontWeight: 600 }}>
-            Sign up
-          </Link>
-        </p>
       </section>
     </main>
   );
 }
+

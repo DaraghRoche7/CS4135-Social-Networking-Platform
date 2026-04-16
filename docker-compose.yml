@@ -1,15 +1,16 @@
 services:
   postgres:
-    image: postgres:16
+    image: postgres:16-alpine
     container_name: studyhub-postgres
     environment:
-      POSTGRES_DB: studyhub
       POSTGRES_USER: studyhub
       POSTGRES_PASSWORD: studyhub
+      POSTGRES_DB: studyhub_platform
     ports:
       - "5432:5432"
     volumes:
-      - studyhub_pgdata:/var/lib/postgresql/data
+      - postgres-data:/var/lib/postgresql/data
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
 
   redis:
     image: redis:7
@@ -24,6 +25,67 @@ services:
       - "5672:5672"
       - "15672:15672"
 
-volumes:
-  studyhub_pgdata:
+  core-service:
+    build:
+      context: ./backend/core-service
+    environment:
+      SERVER_PORT: 8081
+      DB_URL: jdbc:postgresql://postgres:5432/studyhub_core
+      DB_USERNAME: studyhub
+      DB_PASSWORD: studyhub
+      APP_JWT_SECRET: change-me-local-dev-secret-change-me
+      APP_INTERNAL_API_KEY: change-me-internal-api-key
+      APP_MESSAGING_ENABLED: "true"
+      APP_POSTS_DIR: /var/lib/studyhub/posts
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USERNAME: guest
+      RABBITMQ_PASSWORD: guest
+    depends_on:
+      - postgres
+      - rabbitmq
+    ports:
+      - "8081:8081"
+    volumes:
+      - studyhub-posts:/var/lib/studyhub/posts
 
+  support-service:
+    build:
+      context: ./backend/support-service
+    environment:
+      SERVER_PORT: 8082
+      DB_URL: jdbc:postgresql://postgres:5432/studyhub_support
+      DB_USERNAME: studyhub
+      DB_PASSWORD: studyhub
+      CORE_SERVICE_URL: http://core-service:8081
+      APP_JWT_SECRET: change-me-local-dev-secret-change-me
+      APP_INTERNAL_API_KEY: change-me-internal-api-key
+      APP_MESSAGING_ENABLED: "true"
+      APP_ALLOW_DEMO_TOKEN: "false"
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USERNAME: guest
+      RABBITMQ_PASSWORD: guest
+    depends_on:
+      - postgres
+      - rabbitmq
+      - core-service
+    ports:
+      - "8082:8082"
+
+  api-gateway:
+    build:
+      context: ./backend/api-gateway
+    environment:
+      SERVER_PORT: 8080
+      CORE_SERVICE_URL: http://core-service:8081
+      SUPPORT_SERVICE_URL: http://support-service:8082
+    depends_on:
+      - core-service
+      - support-service
+    ports:
+      - "8080:8080"
+
+volumes:
+  postgres-data:
+  studyhub-posts:

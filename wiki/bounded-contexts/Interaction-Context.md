@@ -121,7 +121,7 @@ Before recording a like, the Interaction service verifies the post exists by cal
 ```
 GET /api/posts/{postId}  →  Notes Service (port 8082)
 Response mapped to: PostReference { postId }
-Circuit breaker applied: if Notes service is down, fallback returns 503
+Circuit breaker applied: if Notes service is down, fallback assumes post exists and proceeds (availability over strict consistency)
 ```
 
 ### Downstream: Notification Context (Event)

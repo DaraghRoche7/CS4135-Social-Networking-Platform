@@ -3,6 +3,8 @@ package com.studyhub.coreservice.config;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
+import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.core.QueueBuilder;
 import org.springframework.amqp.core.TopicExchange;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -23,10 +25,14 @@ public class MessagingConfig {
 
     @Bean
     @ConditionalOnProperty(name = "app.messaging.enabled", havingValue = "true")
-    Binding coreLoginBinding(TopicExchange studyHubExchange, AppProperties appProperties) {
-        return BindingBuilder.bind(org.springframework.amqp.core.QueueBuilder.durable("studyhub.auth.audit").build())
-            .to(studyHubExchange)
-            .with(appProperties.getMessaging().getLoginRoutingKey());
+    Queue userSyncQueue() {
+        return QueueBuilder.durable("studyhub.user.sync").build();
+    }
+
+    @Bean
+    @ConditionalOnProperty(name = "app.messaging.enabled", havingValue = "true")
+    Binding userSyncBinding(TopicExchange studyHubExchange, Queue userSyncQueue) {
+        return BindingBuilder.bind(userSyncQueue).to(studyHubExchange).with("user.registered");
     }
 
     @Bean

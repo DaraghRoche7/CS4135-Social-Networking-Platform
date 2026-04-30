@@ -6,14 +6,21 @@ spring:
     gateway:
       mvc:
         routes:
-          - id: core-service-auth
-            uri: ${CORE_SERVICE_URL:http://localhost:8081}
+          - id: user-service-auth
+            uri: ${USER_SERVICE_URL:http://localhost:8083}
             predicates:
               - Path=/api/auth/**
+
+          - id: user-service-users
+            uri: ${USER_SERVICE_URL:http://localhost:8083}
+            predicates:
+              - Path=/api/users/**
+
           - id: core-service-social
             uri: ${CORE_SERVICE_URL:http://localhost:8081}
             predicates:
-              - Path=/api/feed/**,/api/posts/**,/api/users/**
+              - Path=/api/feed/**,/api/posts/**,/api/modules/**
+
           - id: support-service-notifications
             uri: ${SUPPORT_SERVICE_URL:http://localhost:8082}
             predicates:

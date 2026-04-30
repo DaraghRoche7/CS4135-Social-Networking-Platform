@@ -132,6 +132,7 @@ const authSlice = createSlice({
     refreshToken: null,
     role: null,
     userId: null,
+    hydrated: false,
     status: "idle",
     error: null
   },
@@ -151,12 +152,16 @@ const authSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      .addCase(loadAuthFromStorage.fulfilled, (state, action) => {
-        state.token = action.payload.token;
-        state.refreshToken = action.payload.refreshToken;
-        state.role = action.payload.role;
-        state.userId = action.payload.userId;
-      })
+        .addCase(loadAuthFromStorage.fulfilled, (state, action) => {
+          state.token = action.payload.token;
+          state.refreshToken = action.payload.refreshToken;
+          state.role = action.payload.role;
+          state.userId = action.payload.userId;
+          state.hydrated = true;
+        })
+        .addCase(loadAuthFromStorage.rejected, (state) => {
+          state.hydrated = true;
+        })
       .addCase(register.pending, (state) => {
         state.status = "loading";
         state.error = null;

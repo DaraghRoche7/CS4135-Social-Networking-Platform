@@ -1,8 +1,8 @@
-# Events & Messaging (Planned)
+# Events & Messaging
 
 ## Overview
 
-This document describes the planned event-driven architecture and messaging patterns.
+This document describes the messaging infrastructure available in the prototype and how it is intended to be used. Not all event-driven integrations from the domain design are implemented end-to-end in the prototype.
 
 ## Message Broker
 
@@ -11,45 +11,39 @@ This document describes the planned event-driven architecture and messaging patt
 - Event-driven communication between services
 - Decoupled service interactions
 
-## Planned Events
+## Events (prototype + intended future work)
 
-### Post Events
-- **PostCreated**: Published when a new post is created
-  - Triggers: Feed generation, notifications to followers
-- **PostUpdated**: Published when a post is updated
-  - Triggers: Feed cache invalidation
-- **PostDeleted**: Published when a post is deleted
-  - Triggers: Feed cache invalidation, notification cleanup
+### Post / Feed events
+- Prototype note:
+  - Feed reads are served from PostgreSQL via core-service repository queries.
+  - Redis is provisioned but not currently used for feed caching.
+- Future work:
+  - PostCreated/PostUpdated/PostDeleted events can be introduced to support cache invalidation and downstream notifications.
 
 ### User Events
-- **UserFollowed**: Published when a user follows another user
-  - Triggers: Feed subscription updates
-- **UserUnfollowed**: Published when a user unfollows another user
-  - Triggers: Feed subscription cleanup
-- **UserRegistered**: Published when a new user registers
-  - Triggers: Welcome notification, initial feed setup
+- **UserRegistered**: published by user-service when a new user registers (prototype wiring present)
+- **UserFollowed**: published by user-service when a user follows another user (prototype wiring present)
+
+Note: not all consumers are implemented; the publishing service has no knowledge of its consumers (bounded-context decoupling).
 
 ### Interaction Events
-- **PostLiked**: Published when a post is liked
-  - Triggers: Notification to post author
-- **PostUnliked**: Published when a post is unliked
-  - Triggers: Notification cleanup (if applicable)
+- Prototype note:
+  - Likes/comments are implemented inside core-service in the current prototype.
+- Future work:
+  - PostLiked/PostUnliked events can be published to notify authors or drive analytics.
 
-## Event Flow
+## Event Flow (prototype reality)
 
-### Post Creation Flow
-1. User creates post via Core Service
-2. Core Service validates and stores post
-3. Core Service publishes `PostCreated` event to RabbitMQ
-4. Support Service consumes `PostCreated` event
-5. Support Service fans out post to all followers' feeds
-6. Support Service caches feeds in Redis
-7. Support Service sends notifications to followers
+### Post / Feed flow (today)
+1. User creates post via core-service (through API gateway)
+2. core-service validates and stores post in PostgreSQL
+3. Feed reads query PostgreSQL and return results directly (no Redis cache-aside)
 
-### Fan-Out Pattern
-- When a post is created, it's added to all followers' feeds
-- Feeds are cached in Redis for fast retrieval
-- Cache invalidation on post updates/deletes
+### Fan-out pattern (future work)
+- Introduce a fan-out flow if the project is extended:
+  - publish events on writes (post create/engagement)
+  - consume to precompute feeds or invalidate caches
+  - measure whether the complexity is justified for the expected scale
 
 ## Message Structure (Planned)
 
@@ -59,7 +53,7 @@ Events will contain:
 - User ID (who triggered the event)
 - Relevant data (post ID, target user ID, etc.)
 
----
-
-**Status:** Planned - Event structure and routing will be defined during implementation.
+## Support Service dependency note (resilience)
+- Support-service calls core-service internal endpoints for validation (synchronous HTTP).
+- Outbound calls are protected with connect/read timeouts and bounded retries to avoid stalling consumers if core-service is slow/unavailable.
 

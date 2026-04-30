@@ -1,13 +1,13 @@
-# API Contracts (Planned)
+# API Contracts
 
 ## Overview
 
-This document describes the planned API contract structure for the Social Networking Platform.
+This document describes the API contracts exposed by the prototype (via the API gateway), plus a small set of clearly-labelled future work.
 
 ## API Documentation
 
 ### Source of Truth
-- **Swagger/OpenAPI** will be the source of truth for API contracts
+- **Swagger/OpenAPI** is the source of truth for API contracts
 - Each service will expose OpenAPI documentation at `/swagger-ui.html`
 - API documentation will be automatically generated from code annotations
 
@@ -16,34 +16,36 @@ This document describes the planned API contract structure for the Social Networ
 - Gateway will route to appropriate microservices
 - Gateway URL will be the single entry point for the frontend
 
-## Planned Endpoints
+## Prototype Endpoints (via API Gateway)
 
-### Authentication Endpoints (Core Service)
-- `POST /api/auth/register` - User registration
+### Authentication Endpoints (user-service)
+- `POST /api/auth/register` - User registration (UL-only domains)
 - `POST /api/auth/login` - User login
-- `POST /api/auth/refresh` - Token refresh
-- `POST /api/auth/logout` - User logout
+- `POST /api/auth/refresh` - Token refresh (rotates refresh token)
+- `POST /api/auth/logout` - Logout (invalidates refresh token)
+- `POST /api/auth/forgot-password` - Request password reset
+- `POST /api/auth/reset-password` - Reset password with token
 
-### User Endpoints (Core Service)
-- `GET /api/users/{id}` - Get user profile
-- `PUT /api/users/{id}` - Update user profile
-- `GET /api/users/{id}/followers` - Get user followers
-- `GET /api/users/{id}/following` - Get users following
-- `POST /api/users/{id}/follow` - Follow a user
-- `DELETE /api/users/{id}/follow` - Unfollow a user
+### User Endpoints (user-service)
+- `GET /api/users/{userId}` - Get user profile
+- `PUT /api/users/{userId}` - Update profile
+- `POST /api/users/{userId}/follow` - Follow a user
+- `DELETE /api/users/{userId}/follow` - Unfollow a user
 
-### Post Endpoints (Core Service)
-- `GET /api/posts` - Get posts (with pagination)
-- `POST /api/posts` - Create a new post
-- `GET /api/posts/{id}` - Get post by ID
-- `PUT /api/posts/{id}` - Update post
-- `DELETE /api/posts/{id}` - Delete post
-- `POST /api/posts/{id}/like` - Like a post
-- `DELETE /api/posts/{id}/like` - Unlike a post
+### Post Endpoints (core-service)
+- `GET /api/posts` - List posts
+- `POST /api/posts` - Create a new post (PNG upload supported in prototype)
+- `POST /api/posts/{postId}/like` - Like a post
+- `DELETE /api/posts/{postId}/like` - Unlike a post
+- `POST /api/posts/{postId}/comments` - Add a comment
+- `GET /api/posts/{postId}/comments` - List comments
 
-### Feed Endpoints (Support Service)
-- `GET /api/feed` - Get user's personalized feed
-- `GET /api/feed/timeline` - Get timeline feed
+### Module Endpoints (core-service)
+- `GET /api/modules` - List modules
+- `POST /api/modules/follow` - Follow a module
+
+### Feed Endpoints (core-service)
+- `GET /api/feed` - Get personalized feed (served from PostgreSQL; no Redis caching yet)
 
 ### Notification Endpoints (Support Service)
 - `GET /api/notifications` - Get user notifications
@@ -61,7 +63,7 @@ This document describes the planned API contract structure for the Social Networ
 - HTTP status codes following REST conventions
 - Meaningful error messages
 
----
-
-**Status:** Planned - Actual endpoints and contracts will be documented in Swagger once services are implemented.
+## Notes
+- The API gateway is the single frontend entry point (default `http://localhost:8080`).
+- Swagger endpoints are exposed per service (see `Deployment.md` / service configs).
 

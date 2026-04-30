@@ -8,12 +8,12 @@ A full-stack social networking platform built with React frontend and Spring Boo
 
 ## Navigation
 
-- [Architecture (Planned)](./Architecture.md)
-- [Services (Planned)](./Services.md)
-- [API Contracts (Planned)](./API-Contracts.md)
-- [Authentication & Security (Planned)](./Authentication-Security.md)
-- [Events & Messaging (Planned)](./Events-Messaging.md)
-- [Deployment (Planned)](./Deployment.md)
+- [Architecture](./Architecture.md)
+- [Services](./Services.md)
+- [API Contracts](./API-Contracts.md)
+- [Authentication & Security](./Authentication-Security.md)
+- [Events & Messaging](./Events-Messaging.md)
+- [Deployment](./Deployment.md)
 
 ## Quick Links
 
@@ -23,5 +23,5 @@ A full-stack social networking platform built with React frontend and Spring Boo
 
 ---
 
-**Note:** This wiki is in the planning stage. Content will be updated as the project develops.
+**Note:** The wiki reflects the prototype implementation and is updated alongside development.
 

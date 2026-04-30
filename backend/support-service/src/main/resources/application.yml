@@ -57,6 +57,10 @@ app:
   core-service:
     base-url: ${CORE_SERVICE_URL:http://localhost:8081}
     internal-api-key: ${APP_INTERNAL_API_KEY:change-me-internal-api-key}
+    connect-timeout-ms: ${CORE_SERVICE_CONNECT_TIMEOUT_MS:1500}
+    read-timeout-ms: ${CORE_SERVICE_READ_TIMEOUT_MS:2500}
+    max-attempts: ${CORE_SERVICE_MAX_ATTEMPTS:2}
+    backoff-ms: ${CORE_SERVICE_BACKOFF_MS:200}
   messaging:
     enabled: ${APP_MESSAGING_ENABLED:false}
     exchange: ${APP_EVENTS_EXCHANGE:studyhub.events}

@@ -1,0 +1,170 @@
+Review feedback – technical write-up notes (expand into report/wiki)
+==================================================================
+
+Scope note
+----------
+This file captures:
+- What reviewers observed (API/behaviour gaps).
+- What the current implementation actually does (with concrete service ownership + endpoints).
+- What to document (so behaviour matches reviewer expectations).
+- Optional “future work” technical directions if you want to extend the prototype.
+
+1) Registration implementation (prototype scope + frontend path)
+--------------------------------------------------------------
+Observed review issue:
+- Reviewers found an auth surface that supported login but not registration in the Core Service auth controller.
+- This led to testing registration-like scenarios via curl rather than through the SPA.
+
+Current implementation (what the repo does today):
+- There are two “auth” implementations present:
+  - Core Service (backend/core-service) exposes:
+    - POST /api/auth/login (issues JWT for Core domain)
+    - No /api/auth/register in the Core Service controller.
+  - User Service (services/user-service) exposes:
+    - POST /api/auth/register
+    - POST /api/auth/login
+    - POST /api/auth/refresh
+    - POST /api/auth/logout
+    - password reset endpoints
+- The API Gateway used in docker-compose.yml (backend/api-gateway) routes:
+  - /api/auth/** -> user-service (so register/login are expected to work through the gateway)
+- Frontend implementation:
+  - SPA calls POST /api/auth/register and POST /api/auth/login against the gateway base URL (default http://localhost:8080).
+  - There is a /register route in the SPA and it dispatches a register thunk with { name, email, password }.
+  - Domain restriction: user-service validation requires UL emails:
+    - @ul.ie OR @studentmail.ul.ie (enforced via Bean Validation + service-level domain check).
+
+Practical testing workflow (for reviewers):
+- Start infra (Postgres/Redis/RabbitMQ) + services + gateway.
+- Use UI at http://localhost:5173:
+  - Register with a UL-valid address, or use demo accounts (see below).
+  - Login, then navigate to Student dashboard.
+
+Development improvement implemented (to remove reviewer friction):
+- Seeded demo users in user-service for non-prod runs:
+  - student@studentmail.ul.ie / Password123!
+  - peer@studentmail.ul.ie / Password123!
+  - admin@ul.ie / Password123!
+- This makes login/UI testing possible without requiring a manual registration step during review.
+
+What to document (write-up points):
+- Make the prototype scope explicit:
+  - “Self-registration supported” via user-service OR “seeded users only” (depending on how you frame the demo).
+- Clarify that /api/auth/* is owned by user-service when running through the gateway in docker-compose.
+- Include the register payload shape:
+  - name (<=100), email (UL domain only), password (min 8)
+- Mention the user-service emits a “user registered” event (RabbitMQ) after registration (if messaging enabled).
+
+2) Document what the gateway does vs where JWTs are enforced
+-----------------------------------------------------------
+Observed review issue:
+- Confusion about whether the API Gateway enforces JWTs (edge auth) or whether downstream services enforce JWTs.
+
+Current implementation (what the repo does today):
+- API Gateway (backend/api-gateway):
+  - Primary responsibilities: routing + CORS at the edge.
+  - It forwards HTTP to services based on path predicates:
+    - /api/auth/**, /api/users/** -> user-service
+    - /api/feed/**, /api/posts/**, /api/modules/** -> core-service
+    - /api/notifications/** -> support-service
+- JWT enforcement:
+  - Business APIs are protected/enforced inside the downstream services (not in the gateway):
+    - Core Service uses Spring Security (resource-server style) to validate JWT on protected endpoints.
+    - Support Service also uses Spring Security on its protected APIs.
+  - Frontend currently adds:
+    - Authorization: Bearer <JWT>
+    - X-User-Id header (temporary) because the gateway does not yet inject identity headers derived from JWT claims.
+
+Production intent / future work:
+- Rate limiting at gateway level (token bucket / leaky bucket) to protect downstream services.
+- Horizontal scaling:
+  - Run multiple gateway replicas behind a load balancer.
+  - Keep gateway stateless; move shared state to Redis or other shared stores if needed.
+- Centralized auth at the edge (optional):
+  - JWT validation at gateway can be introduced later, but then you must align claims/roles and propagate identity.
+
+3) Redis feed caching (current behaviour vs provisioning)
+--------------------------------------------------------
+Observed review issue:
+- Redis is provisioned in docker-compose, but reviewers could not find code paths using Redis for feed reads.
+
+Current implementation (what the repo does today):
+- Feed reads are backed by PostgreSQL queries (JPA repository methods).
+- Redis exists as infrastructure but feed endpoints still hit Postgres (no cache-aside implemented).
+
+What to document (write-up points):
+- Explain current behaviour explicitly:
+  - “Redis is provisioned but not currently used in the feed read path.”
+- Explain why it exists:
+  - reserved for future caching experiments, rate limiting, or session-like state (prototype extension).
+
+Future work (technical options):
+- Cache-aside for feed pages:
+  - Key design: feed:{userId}:{page}:{size}:{optionalModuleFilter}:{sortVersion}
+  - TTL: short (e.g. 10–60s) to avoid complex invalidation.
+- Invalidation strategy (if implemented):
+  - On post creation/like/comment/follow: delete relevant keys (hard), or rely on short TTL (simple).
+- Observability:
+  - Measure cache hit rate and DB query latency reduction to justify Redis complexity.
+
+4) Access-token lifecycle (refresh vs re-auth policy)
+-----------------------------------------------------
+Observed review issue:
+- Review feedback asked to clarify token lifecycle (refresh or re-auth) and implications.
+
+Current implementation (what the repo does today):
+- User Service supports refresh:
+  - POST /api/auth/refresh (takes refreshToken, issues new access token + rotates refresh token)
+  - POST /api/auth/logout (invalidates refresh token server-side by clearing it)
+- Frontend has a refresh flow:
+  - Axios interceptor calls /api/auth/refresh on 401 (non-auth endpoints) if a refreshToken is present.
+
+What to document (write-up points):
+- Choice: short-lived stateless access token + server-stored refresh token (in user-service DB).
+- Rotation behaviour:
+  - Refresh token is rotated on login/refresh.
+- Configurations:
+  - Access token TTL configured in user-service via JWT_EXPIRATION_MS (default in docker-compose is 86400000).
+- Trade-offs:
+  - Access token lifetime affects security window and how often refresh occurs.
+  - Refresh endpoint reduces re-login frequency but adds server-side state + revocation mechanics.
+
+5) Support Service: consumer resilience for Core validation calls
+---------------------------------------------------------------
+Observed review issue:
+- The Support Service consumes messages and calls Core for user/recipient validation.
+- If Core is slow/down, consumers can stall indefinitely without timeouts.
+
+Current implementation (what the repo does today):
+- Support Service calls Core over HTTP using Spring’s RestClient.
+- It adds X-Internal-Api-Key and calls an internal Core endpoint:
+  - GET /internal/users/{userId}
+
+Development improvement implemented (code change already done):
+- Added outbound HTTP client protections:
+  - Connect timeout + read timeout for Core calls.
+  - Small bounded retry for transient failures:
+    - Retries on network/timeouts and HTTP 5xx/429.
+    - Does NOT retry on 404 (recipient not found) and fails fast for non-retryable statuses.
+- Configuration knobs (Support Service):
+  - core-service.connect-timeout-ms
+  - core-service.read-timeout-ms
+  - core-service.max-attempts
+  - core-service.backoff-ms
+  - Environment equivalents:
+    - CORE_SERVICE_CONNECT_TIMEOUT_MS
+    - CORE_SERVICE_READ_TIMEOUT_MS
+    - CORE_SERVICE_MAX_ATTEMPTS
+    - CORE_SERVICE_BACKOFF_MS
+
+What to document (write-up points):
+- Behaviour when Core is slow/down:
+  - Requests fail fast (bounded by timeouts) rather than hanging indefinitely.
+  - Retries are bounded to a small number of attempts to avoid message processing deadlocks.
+- Messaging failure handling:
+  - Define whether failed notifications should be:
+    - Deferred/retried later (DLQ + reprocessor), OR
+    - Dropped after max attempts, OR
+    - Kept in a “pending” store for later reconciliation.
+  - Document operational intent rather than leaving it implicit.
+

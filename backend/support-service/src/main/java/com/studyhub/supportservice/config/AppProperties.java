@@ -54,6 +54,18 @@ public class AppProperties {
         @NotBlank
         private String internalApiKey = "change-me-internal-api-key";
 
+        /**
+         * Network timeouts for outbound Core Service calls.
+         */
+        private int connectTimeoutMs = 1500;
+        private int readTimeoutMs = 2500;
+
+        /**
+         * Small bounded retry for transient Core failures (timeouts/5xx).
+         */
+        private int maxAttempts = 2;
+        private int backoffMs = 200;
+
         public String getBaseUrl() {
             return baseUrl;
         }
@@ -68,6 +80,38 @@ public class AppProperties {
 
         public void setInternalApiKey(String internalApiKey) {
             this.internalApiKey = internalApiKey;
+        }
+
+        public int getConnectTimeoutMs() {
+            return connectTimeoutMs;
+        }
+
+        public void setConnectTimeoutMs(int connectTimeoutMs) {
+            this.connectTimeoutMs = connectTimeoutMs;
+        }
+
+        public int getReadTimeoutMs() {
+            return readTimeoutMs;
+        }
+
+        public void setReadTimeoutMs(int readTimeoutMs) {
+            this.readTimeoutMs = readTimeoutMs;
+        }
+
+        public int getMaxAttempts() {
+            return maxAttempts;
+        }
+
+        public void setMaxAttempts(int maxAttempts) {
+            this.maxAttempts = maxAttempts;
+        }
+
+        public int getBackoffMs() {
+            return backoffMs;
+        }
+
+        public void setBackoffMs(int backoffMs) {
+            this.backoffMs = backoffMs;
         }
     }
 

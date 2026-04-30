@@ -1,10 +1,10 @@
-# Architecture (Planned)
+# Architecture
 
 ## Overview
 
-This document describes the planned architecture for the Social Networking Platform.
+This document describes the prototype architecture implemented in this repository, plus a small amount of clearly-labelled future work.
 
-## High-Level Architecture
+## High-Level Architecture (Prototype)
 
 ### Frontend
 - **React** application with functional components
@@ -13,10 +13,10 @@ This document describes the planned architecture for the Social Networking Platf
 - **Axios** for API communication
 
 ### Backend
-- **Microservices architecture** with at least 2 independent Spring Boot services
-- **API Gateway** (Spring Cloud Gateway) as central entry point
-- **Message Broker** (RabbitMQ) for asynchronous communication
-- **Caching Layer** (Redis) for performance optimization
+- **Microservices architecture** with multiple Spring Boot services
+- **API Gateway** (Spring Cloud Gateway) as the single entry point for the SPA
+- **Message Broker** (RabbitMQ) provisioned for async communication
+- **Redis** provisioned (not currently used for feed caching)
 
 ## Components
 
@@ -26,23 +26,30 @@ This document describes the planned architecture for the Social Networking Platf
 - Handles CORS configuration
 - Masks underlying microservices architecture
 
+#### Prototype routing (docker-compose)
+- `/api/auth/**`, `/api/users/**` → **user-service**
+- `/api/feed/**`, `/api/posts/**`, `/api/modules/**` → **core-service**
+- `/api/notifications/**` → **support-service**
+
 ### Microservices
-- **Core Service**: User management, authentication, posts
-- **Support Service**: Feed generation, notifications
+- **User Service**: authentication + identity (register/login/refresh/logout, user profile + follow)
+- **Core Service**: posts + module follow + feed reads, plus likes/comments/upload within the prototype
+- **Support Service**: notifications APIs and background processing
 
 ### Data Layer
 - **PostgreSQL** for persistent data storage
-- **Redis** for caching hot data (feeds, timelines)
+- **Redis** is provisioned but not currently used to serve feed reads (PostgreSQL is the source for feed queries)
 - **RabbitMQ** for event-driven messaging
 
 ## Patterns
 
 - **Layered Architecture**: Controller → Service → Repository
-- **CQRS**: Command Query Responsibility Segregation for feed generation
-- **Event-Driven**: Fan-out pattern for follower feeds
+- **CQRS (lightweight)**: read endpoints use repository queries; write flows remain within service boundaries
+- **Event-Driven (selective)**: RabbitMQ is available; not all bounded-context integrations are implemented in the prototype
 - **Microservices**: Independent, scalable services
 
----
-
-**Status:** Planned - Architecture will be refined during implementation.
+## Future work (explicitly not required for prototype)
+- **Rate limiting** at gateway
+- **Horizontal scaling**: multiple gateway replicas behind a load balancer
+- **Redis cache-aside** for feed reads (see `Authentication-Security.md` and `Services.md` for current behaviour)
 

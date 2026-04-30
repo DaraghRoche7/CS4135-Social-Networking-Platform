@@ -1,69 +1,40 @@
-# Deployment (Planned)
+# Deployment
 
 ## Overview
 
-This document describes the planned deployment strategy for the Social Networking Platform.
+This document describes how to run the prototype locally for review/testing.
 
-## Hosting Strategy (Planned)
+## Local prototype run
 
-### Frontend
-- **Hosting Platform**: TBD (Options: Vercel, Netlify, AWS S3 + CloudFront)
-- **Build Process**: Automated build from main branch
-- **Environment Variables**: Managed through hosting platform
+### Option A: Full Docker (may require stable image pulls)
+- Build services (JARs) and run `docker compose up -d --build`
 
-### Backend Services
-- **Hosting Platform**: TBD (Options: AWS EC2, Azure App Service, Heroku, Railway)
-- **Containerization**: Docker containers for each service
-- **Orchestration**: Docker Compose for local, Kubernetes/Docker Swarm for production (if needed)
+### Option B (recommended if Docker image pulls are flaky): Docker infra + services local
+Run infrastructure services in Docker, and run Spring services locally.
 
-### Infrastructure Services
-- **PostgreSQL**: Managed database service (AWS RDS, Azure Database, or similar)
-- **Redis**: Managed Redis service (AWS ElastiCache, Azure Cache, or similar)
-- **RabbitMQ**: Managed message queue or containerized deployment
+1) Start infra containers:
+- PostgreSQL (port 5432)
+- Redis (port 6379) – provisioned (not required for feed reads)
+- RabbitMQ (ports 5672, 15672)
 
-## Deployment Pipeline (Planned)
+2) Run Spring services locally:
+- API Gateway: `http://localhost:8080`
+- Core Service: `http://localhost:8081`
+- Support Service: `http://localhost:8082`
+- User Service: `http://localhost:8083`
 
-### CI/CD
-- **GitHub Actions** for continuous integration
-- Automated testing on every push
-- Automated deployment on merge to main
-- Environment-specific configurations (dev, staging, production)
+3) Run frontend locally:
+- Vite dev server: `http://localhost:5173`
+- Frontend calls the gateway base URL (default `http://localhost:8080`)
 
-### Deployment Steps
-1. Code merged to main branch
-2. GitHub Actions triggers build
-3. Tests run automatically
-4. If tests pass, deploy to environment
-5. Health checks verify deployment
+### Smoke test (via gateway)
+- Login:
+  - `POST /api/auth/login`
+- Feed:
+  - `GET /api/feed`
 
-## Environment Configuration
-
-### Development
-- Local Docker Compose setup
-- Local databases and services
-- Hot reload for development
-
-### Production
-- Managed services for databases
-- Load balancing for services
-- Monitoring and logging
-- Backup strategies
-
-## Monitoring (Planned)
-
-### Metrics
-- Application performance monitoring
-- Error tracking
-- Database performance
-- Cache hit rates
-- Message queue health
-
-### Logging
-- Centralized logging
-- Log aggregation
-- Error alerting
-
----
-
-**Status:** Planned - Deployment strategy will be finalized based on hosting platform selection and requirements.
+## Future work (production)
+- CI/CD pipeline (GitHub Actions) for build/test/deploy
+- Observability (metrics/logging)
+- Gateway rate limiting + horizontal scaling
 

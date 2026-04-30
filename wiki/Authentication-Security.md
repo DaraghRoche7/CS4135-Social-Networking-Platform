@@ -1,8 +1,8 @@
-# Authentication & Security (Planned)
+# Authentication & Security
 
 ## Overview
 
-This document describes the planned authentication and security implementation.
+This document describes the authentication and security implementation used by the prototype deployment.
 
 ## Authentication Strategy
 
@@ -12,21 +12,28 @@ This document describes the planned authentication and security implementation.
 - Access tokens for API requests
 - Refresh tokens for token renewal
 
+#### Ownership (prototype)
+- All `/api/auth/**` endpoints are owned by **user-service** and are accessed via the API gateway.
+- The Core Service contains a `/api/auth/login` endpoint, but it is not part of the main gateway-auth flow.
+
 ### Token Flow
-1. User logs in with credentials
-2. Backend validates credentials
-3. Backend generates JWT access token and refresh token
-4. Frontend stores tokens securely
-5. Frontend includes token in API requests
-6. Backend validates token on each request
+1. User logs in (`POST /api/auth/login`) via the API gateway → user-service
+2. user-service validates credentials and issues:
+   - access token (JWT)
+   - refresh token (stored server-side in the user-service DB and returned to the client)
+3. Frontend stores tokens and includes:
+   - `Authorization: Bearer <JWT>` on API requests
+   - `X-User-Id` temporarily (identity is not injected by the gateway yet)
+4. On 401 responses (non-auth endpoints), the frontend calls:
+   - `POST /api/auth/refresh` and retries the original request if refresh succeeds
 
 ## Security Implementation
 
 ### Backend (Spring Security)
-- **Custom security filter** to validate JWT on every request
-- Token validation before processing requests
-- Role extraction from token claims
-- Secure password hashing (BCrypt)
+- JWT validation is enforced within downstream services (not centrally at the gateway):
+  - core-service enforces JWT on protected business APIs
+  - support-service enforces JWT on notification APIs
+- Password hashing uses BCrypt in user-service
 
 ### Frontend (React)
 - **Axios interceptors** for token handling
@@ -35,10 +42,24 @@ This document describes the planned authentication and security implementation.
 - Token expiration detection and refresh
 - Secure token storage
 
+#### Registration payload (user-service)
+`POST /api/auth/register` accepts:
+```json
+{
+  "name": "Student Name",
+  "email": "student@studentmail.ul.ie",
+  "password": "Password123!"
+}
+```
+
+Constraints:
+- UL-only email domain rule: `@ul.ie` or `@studentmail.ul.ie`
+- Password length ≥ 8 characters
+
 ## Role-Based Access Control (RBAC)
 
 ### Roles (Planned)
-- **USER**: Standard user role
+- **STUDENT**: Standard user role
 - **ADMIN**: Administrative privileges
 
 ### Implementation
@@ -69,7 +90,10 @@ This document describes the planned authentication and security implementation.
 - Password strength requirements
 - No password storage in plain text
 
----
+## Configuration notes
+- Access token TTL is configured via `JWT_EXPIRATION_MS` (default 86400000ms / 24 hours in docker-compose)
 
-**Status:** Planned - Security implementation details will be refined during development.
+## Future work
+- Gateway rate limiting
+- Optional edge JWT validation (only if identity propagation is designed end-to-end)
 

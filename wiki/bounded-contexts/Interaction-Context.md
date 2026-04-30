@@ -8,6 +8,9 @@ The Interaction Context handles likes on notes/posts within StudyHub. It covers 
 
 It only deals with likes — it doesn't own post or user data. It references them by ID only. Post content lives in the Notes context, user profiles in the User/Auth context.
 
+### Prototype note
+In the current prototype deployment, like/unlike and comment behaviour is implemented inside the **Core Service** rather than deployed as a standalone Interaction service. The bounded context remains useful as a design artifact (DDD decomposition), but the runtime deployment consolidates interaction behaviour for simplicity.
+
 ---
 
 ## DDD Building Blocks

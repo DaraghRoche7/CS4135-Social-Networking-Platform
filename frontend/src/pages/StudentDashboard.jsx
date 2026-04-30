@@ -19,6 +19,9 @@ function FeedPostRow({ item, likePost, unlikePost, onFeedRefresh }) {
   const [commentsLoading, setCommentsLoading] = useState(true);
   const [commentDraft, setCommentDraft] = useState("");
   const [commentError, setCommentError] = useState(null);
+  const [pdfUrl, setPdfUrl] = useState(null);
+  const [pdfLoading, setPdfLoading] = useState(false);
+  const [pdfError, setPdfError] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -38,6 +41,35 @@ function FeedPostRow({ item, likePost, unlikePost, onFeedRefresh }) {
       cancelled = true;
     };
   }, [item.id]);
+
+  useEffect(() => {
+    return () => {
+      if (pdfUrl) {
+        URL.revokeObjectURL(pdfUrl);
+      }
+    }
+  }, [pdfUrl])
+
+  const togglePreview = async () => {
+    if (pdfUrl) {
+      URL.revokeObjectURL(pdfUrl);
+      setPdfUrl(null);
+      setPdfError(null);
+      return;
+    }
+    setPdfLoading(true);
+    setPdfError(null);
+    try {
+      const res = await api.get(`/api/posts/${item.id}/file`, {responseType: "blob", headers: {Accept: "application/pdf"}});
+      const blob = new Blob([res.data], {type: "application/pdf"});
+      setPdfUrl(URL.createObjectURL(blob))
+    } catch (e) {
+      setPdfError(e.message ?? "Could not load PDF")
+    } finally {
+      setPdfLoading(false);
+    }
+  }
+
 
   const submitComment = async (e) => {
     e.preventDefault();
@@ -67,17 +99,35 @@ function FeedPostRow({ item, likePost, unlikePost, onFeedRefresh }) {
         {uploadPostFieldsLabel(item.description) || "No description."}
       </p>
       <p className="muted" style={{ margin: "0.35rem 0 0", fontSize: "0.85rem" }}>
-        Module: <strong>{uploadPostFieldsLabel(item.moduleCode)}</strong>
+        Module: <strong>{uploadPostFieldsLabel(item.module?? item.moduleCode)}</strong>
       </p>
       <div className="btn-row" style={{ marginTop: "0.75rem" }}>
         <button
-          className="btn btn--primary"
-          type="button"
-          onClick={() => (liked ? unlikePost(item.id) : likePost(item.id))}
+            className="btn btn--primary"
+            type="button"
+            onClick={() => (liked ? unlikePost(item.id) : likePost(item.id))}
         >
           {liked ? `Unlike (${likes})` : `Like (${likes})`}
         </button>
+        <button className="btn btn--secondary" type="button" onClick={togglePreview} disabled={pdfLoading}>
+          {pdfLoading ? "Loading…" : pdfUrl ? "Hide preview" : "Preview PDF"}
+        </button>
+        {pdfUrl ? ( <a className="btn btn--secondary" href={pdfUrl} target="_blank" rel="noopener noreferrer">Open in new tab</a>) : null}
       </div>
+
+      {pdfError ? <p style={{ color: "#c0392b", marginTop: "0.5rem" }}>{String(pdfError)}</p> : null}
+      {pdfUrl ? (
+          <div style={{ marginTop: "0.75rem" }}>
+            <iframe
+                src={pdfUrl}
+                title={`PDF preview for ${uploadPostFieldsLabel(item.title) || "post"}`}
+                style={{width: "100%", height: "600px", border: "1px solid var(--border, #ddd)", borderRadius: "4px",}}
+            />
+            <p className="muted" style={{ fontSize: "0.8rem", marginTop: "0.25rem" }}>
+              {uploadPostFieldsLabel(item.originalFileName)}
+            </p>
+          </div>
+      ) : null}
 
       <div style={{ marginTop: "1rem" }}>
         <h4 style={{ margin: "0 0 0.5rem", fontSize: "1rem" }}>Comments</h4>
@@ -141,7 +191,7 @@ export function StudentDashboard() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [module, setModule] = useState("");
-  const [pngFile, setPngFile] = useState(null);
+  const [pdfFile, setPdfFile] = useState(null);
   const [uploadStatus, setUploadStatus] = useState("idle");
   const [uploadError, setUploadError] = useState(null);
 
@@ -221,8 +271,8 @@ export function StudentDashboard() {
 
   const onSubmitUpload = async (e) => {
     e.preventDefault();
-    if (!pngFile) {
-      setUploadError("Please choose a PNG file.");
+    if (!pdfFile) {
+      setUploadError("Please choose a pdf file.");
       return;
     }
     setUploadStatus("loading");
@@ -232,14 +282,14 @@ export function StudentDashboard() {
       form.append("title", title);
       form.append("description", description);
       form.append("module", module);
-      form.append("file", pngFile);
+      form.append("file", pdfFile);
 
       await api.post("/api/posts", form);
 
       setTitle("");
       setDescription("");
       setModule("");
-      setPngFile(null);
+      setPdfFile(null);
 
       setUploadStatus("succeeded");
       setFeedRefreshNonce((n) => n + 1);
@@ -299,7 +349,7 @@ export function StudentDashboard() {
             <h1 style={{ marginTop: 0 }}>Student Dashboard</h1>
             <p className="muted" style={{ marginTop: 0 }}>
               Follow a module (try <strong>4135</strong> or <strong>CS4135</strong>), view your feed, like posts, and
-              add comments. Uploads must be <strong>PNG</strong> images only.
+              add comments. Uploads must be <strong>pdf</strong> images only.
             </p>
 
             <div className="form-row">
@@ -387,7 +437,7 @@ export function StudentDashboard() {
             </section>
 
             <section className="card">
-              <h2 style={{ marginTop: 0 }}>Upload a PNG note</h2>
+              <h2 style={{ marginTop: 0 }}>Upload a PDF note</h2>
               <form onSubmit={onSubmitUpload}>
                 <div className="form-row">
                   <label>
@@ -412,11 +462,11 @@ export function StudentDashboard() {
 
                 <div className="form-row">
                   <label>
-                    PNG file
+                    PDF file
                     <input
                       type="file"
-                      accept="image/png,.png"
-                      onChange={(e) => setPngFile(e.target.files?.[0] || null)}
+                      accept="image/pdf,.pdf"
+                      onChange={(e) => setPdfFile(e.target.files?.[0] || null)}
                       required
                     />
                   </label>

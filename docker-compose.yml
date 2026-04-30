@@ -25,6 +25,28 @@ services:
       - "5672:5672"
       - "15672:15672"
 
+  user-service:
+    build:
+      context: ./services/user-service
+    environment:
+      SERVER_PORT: 8083
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: studyhub_users
+      DB_USER: studyhub
+      DB_PASS: studyhub
+      JWT_SECRET: change-me-local-dev-secret-change-me
+      JWT_EXPIRATION_MS: 86400000
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: guest
+      RABBITMQ_PASS: guest
+    depends_on:
+      - postgres
+      - rabbitmq
+    ports:
+      - "8083:8083"
+
   core-service:
     build:
       context: ./backend/core-service
@@ -80,7 +102,9 @@ services:
       SERVER_PORT: 8080
       CORE_SERVICE_URL: http://core-service:8081
       SUPPORT_SERVICE_URL: http://support-service:8082
+      USER_SERVICE_URL: http://user-service:8083
     depends_on:
+      - user-service
       - core-service
       - support-service
     ports:

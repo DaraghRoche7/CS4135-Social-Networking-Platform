@@ -1,9 +1,12 @@
 package com.studyhub.coreservice.post.application;
 
 import com.studyhub.coreservice.auth.application.UserNotFoundException;
+import com.studyhub.coreservice.auth.application.UserProvisioningService;
 import com.studyhub.coreservice.auth.domain.StudyHubUser;
 import com.studyhub.coreservice.auth.persistence.StudyHubUserRepository;
 import com.studyhub.coreservice.auth.persistence.UserFollowRepository;
+import com.studyhub.coreservice.module.domain.FollowedModule;
+import com.studyhub.coreservice.module.persistence.FollowedModuleRepository;
 import com.studyhub.coreservice.post.api.dto.CreatePostRequest;
 import com.studyhub.coreservice.post.api.dto.PostListResponse;
 import com.studyhub.coreservice.post.api.dto.PostResponse;
@@ -12,6 +15,7 @@ import com.studyhub.coreservice.post.domain.Post;
 import com.studyhub.coreservice.post.domain.PostLike;
 import com.studyhub.coreservice.post.persistence.PostLikeRepository;
 import com.studyhub.coreservice.post.persistence.PostRepository;
+import com.studyhub.coreservice.post.persistence.PostCommentRepository;
 import java.time.Clock;
 import java.util.Collection;
 import java.util.HashMap;
@@ -31,23 +35,32 @@ public class PostService {
 
     private final PostRepository postRepository;
     private final PostLikeRepository postLikeRepository;
+    private final PostCommentRepository postCommentRepository;
     private final StudyHubUserRepository studyHubUserRepository;
     private final UserFollowRepository userFollowRepository;
+    private final FollowedModuleRepository followedModuleRepository;
     private final PostStorageService postStorageService;
+    private final UserProvisioningService userProvisioningService;
     private final Clock clock;
 
     public PostService(
-        PostRepository postRepository,
-        PostLikeRepository postLikeRepository,
-        StudyHubUserRepository studyHubUserRepository,
-        UserFollowRepository userFollowRepository,
-        PostStorageService postStorageService,
-        Clock clock
+            PostRepository postRepository,
+            PostLikeRepository postLikeRepository,
+            PostCommentRepository postCommentRepository,
+            StudyHubUserRepository studyHubUserRepository,
+            UserFollowRepository userFollowRepository,
+            FollowedModuleRepository followedModuleRepository,
+            PostStorageService postStorageService,
+            UserProvisioningService userProvisioningService,
+            Clock clock
     ) {
         this.postRepository = postRepository;
         this.postLikeRepository = postLikeRepository;
+        this.postCommentRepository = postCommentRepository;
         this.studyHubUserRepository = studyHubUserRepository;
         this.userFollowRepository = userFollowRepository;
+        this.followedModuleRepository = followedModuleRepository;
+        this.userProvisioningService = userProvisioningService;
         this.postStorageService = postStorageService;
         this.clock = clock;
     }
@@ -56,17 +69,32 @@ public class PostService {
     public PostListResponse getFeed(String currentUserId, String moduleFilter) {
         StudyHubUser currentUser = getRequiredUser(currentUserId);
         Collection<StudyHubUser> feedAuthors = buildFeedAuthors(currentUser);
-        List<Post> posts = normalizeModule(moduleFilter) == null
-            ? postRepository.findByAuthorInOrderByCreatedAtDesc(feedAuthors)
-            : postRepository.findByAuthorInAndModuleCodeIgnoreCaseOrderByCreatedAtDesc(feedAuthors, normalizeModule(moduleFilter));
+        Collection<String> followedModuleCodes = buildFollowedModuleCodes(currentUser);
+        String normalizedFilter = normalizeModule(moduleFilter);
+
+        List<Post> posts;
+        if (followedModuleCodes.isEmpty()) {
+            // No followed modules - fall back to author-only feed.
+            if (normalizedFilter == null) {
+                posts = postRepository.findByAuthorInOrderByCreatedAtDesc(feedAuthors);
+            } else {
+                posts = postRepository.findByAuthorInAndModuleCodeIgnoreCaseOrderByCreatedAtDesc(
+                        feedAuthors, normalizedFilter);
+            }
+        } else if (normalizedFilter == null) {
+            posts = postRepository.findFeedByAuthorsOrModules(feedAuthors, followedModuleCodes);
+        } else {
+            posts = postRepository.findFeedByAuthorsOrModulesAndModuleFilter(
+                    feedAuthors, followedModuleCodes, normalizedFilter);
+        }
         return new PostListResponse(toResponses(posts, currentUserId));
     }
 
     @Transactional(readOnly = true)
     public PostListResponse getPosts(String currentUserId, String moduleFilter) {
         List<Post> posts = normalizeModule(moduleFilter) == null
-            ? postRepository.findAllByOrderByCreatedAtDesc()
-            : postRepository.findByModuleCodeIgnoreCaseOrderByCreatedAtDesc(normalizeModule(moduleFilter));
+                ? postRepository.findAllByOrderByCreatedAtDesc()
+                : postRepository.findByModuleCodeIgnoreCaseOrderByCreatedAtDesc(normalizeModule(moduleFilter));
         return new PostListResponse(toResponses(posts, currentUserId));
     }
 
@@ -81,16 +109,16 @@ public class PostService {
         String storagePath = postStorageService.storePdf(request.getFile());
         try {
             Post post = postRepository.save(new Post(
-                author,
-                request.getTitle().trim(),
-                request.getDescription().trim(),
-                normalizeRequiredModule(request.getModule()),
-                request.getFile().getOriginalFilename(),
-                request.getFile().getContentType() == null ? "application/pdf" : request.getFile().getContentType(),
-                request.getFile().getSize(),
-                storagePath,
-                clock.instant(),
-                clock.instant()
+                    author,
+                    request.getTitle().trim(),
+                    request.getDescription().trim(),
+                    normalizeRequiredModule(request.getModule()),
+                    request.getFile().getOriginalFilename(),
+                    request.getFile().getContentType() == null ? "application/pdf" : request.getFile().getContentType(),
+                    request.getFile().getSize(),
+                    storagePath,
+                    clock.instant(),
+                    clock.instant()
             ));
             return toResponse(post, currentUserId);
         } catch (RuntimeException ex) {
@@ -104,10 +132,10 @@ public class PostService {
         Post post = getRequiredPost(postId);
         requireOwnershipOrAdmin(post, currentUserId, admin);
         post.updateMetadata(
-            request.title().trim(),
-            request.description().trim(),
-            normalizeRequiredModule(request.module()),
-            clock.instant()
+                request.title().trim(),
+                request.description().trim(),
+                normalizeRequiredModule(request.module()),
+                clock.instant()
         );
         return toResponse(post, currentUserId);
     }
@@ -116,6 +144,7 @@ public class PostService {
     public void deletePost(Long postId, String currentUserId, boolean admin) {
         Post post = getRequiredPost(postId);
         requireOwnershipOrAdmin(post, currentUserId, admin);
+        postCommentRepository.deleteByPost(post);
         postLikeRepository.deleteByPost(post);
         postRepository.delete(post);
         postStorageService.deleteIfExists(post.getStoragePath());
@@ -126,7 +155,7 @@ public class PostService {
         StudyHubUser currentUser = getRequiredUser(currentUserId);
         Post post = getRequiredPost(postId);
         postLikeRepository.findByPostAndUser(post, currentUser)
-            .orElseGet(() -> postLikeRepository.save(new PostLike(post, currentUser, clock.instant())));
+                .orElseGet(() -> postLikeRepository.save(new PostLike(post, currentUser, clock.instant())));
         return toResponse(post, currentUserId);
     }
 
@@ -135,7 +164,7 @@ public class PostService {
         StudyHubUser currentUser = getRequiredUser(currentUserId);
         Post post = getRequiredPost(postId);
         postLikeRepository.findByPostAndUser(post, currentUser)
-            .ifPresent(postLikeRepository::delete);
+                .ifPresent(postLikeRepository::delete);
         return toResponse(post, currentUserId);
     }
 
@@ -150,8 +179,16 @@ public class PostService {
         Map<String, StudyHubUser> authors = new LinkedHashMap<>();
         authors.put(currentUser.getPublicId(), currentUser);
         userFollowRepository.findByFollowerOrderByCreatedAtDesc(currentUser).forEach(follow ->
-            authors.put(follow.getFollowed().getPublicId(), follow.getFollowed()));
+                authors.put(follow.getFollowed().getPublicId(), follow.getFollowed()));
         return authors.values();
+    }
+
+    private Collection<String> buildFollowedModuleCodes(StudyHubUser currentUser) {
+        return followedModuleRepository.findByUserOrderByCreatedAtDesc(currentUser).stream()
+                .map(FollowedModule::getModuleCode)
+                .map(code -> code.toUpperCase(Locale.ROOT))
+                .distinct()
+                .toList();
     }
 
     private List<PostResponse> toResponses(List<Post> posts, String currentUserId) {
@@ -167,12 +204,12 @@ public class PostService {
         Set<Long> likedPostIds = new HashSet<>(postLikeRepository.findLikedPostIds(postIds, currentUserId));
 
         return posts.stream()
-            .map(post -> PostResponse.from(
-                post,
-                likeCounts.getOrDefault(post.getId(), 0L),
-                likedPostIds.contains(post.getId())
-            ))
-            .toList();
+                .map(post -> PostResponse.from(
+                        post,
+                        likeCounts.getOrDefault(post.getId(), 0L),
+                        likedPostIds.contains(post.getId())
+                ))
+                .toList();
     }
 
     private PostResponse toResponse(Post post, String currentUserId) {
@@ -180,13 +217,12 @@ public class PostService {
     }
 
     private StudyHubUser getRequiredUser(String currentUserId) {
-        return studyHubUserRepository.findByPublicId(currentUserId)
-            .orElseThrow(() -> new UserNotFoundException(currentUserId));
+        return userProvisioningService.getOrProvision(currentUserId);
     }
 
     private Post getRequiredPost(Long postId) {
         return postRepository.findById(postId)
-            .orElseThrow(() -> new PostNotFoundException(postId));
+                .orElseThrow(() -> new PostNotFoundException(postId));
     }
 
     private void requireOwnershipOrAdmin(Post post, String currentUserId, boolean admin) {
@@ -211,10 +247,10 @@ public class PostService {
     }
 
     public record PostFileDownload(
-        Resource resource,
-        String contentType,
-        String originalFileName,
-        long fileSize
+            Resource resource,
+            String contentType,
+            String originalFileName,
+            long fileSize
     ) {
     }
 }

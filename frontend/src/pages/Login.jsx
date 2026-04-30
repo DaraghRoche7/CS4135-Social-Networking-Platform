@@ -1,7 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { useNavigate } from "react-router-dom";
-import { useEffect } from "react";
+import { useNavigate, Link } from "react-router-dom";
 import { login } from "../store/slices/authSlice.js";
 import roundLogo from "../../images/round-logo.png";
 
@@ -77,6 +76,11 @@ export function Login() {
             </button>
           </div>
         </form>
+
+        <p style={{ textAlign: "center", marginTop: "1rem", fontSize: "0.95rem" }}>
+          Don't have an account?{" "}
+          <Link to="/register" style={{ color: "var(--color-primary)", fontWeight: 600 }}>Register</Link>
+        </p>
       </section>
     </main>
   );

@@ -1,0 +1,172 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: studyhub-postgres
+    environment:
+      POSTGRES_USER: ${DB_USER:-studyhub}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-studyhub}
+      POSTGRES_DB: studyhub_platform
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-studyhub}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: studyhub-redis
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  rabbitmq:
+    image: rabbitmq:4-management-alpine
+    container_name: studyhub-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-guest}
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_running"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  core-service:
+    build:
+      context: ./backend/core-service
+    container_name: studyhub-core
+    environment:
+      SERVER_PORT: 8081
+      DB_URL: jdbc:postgresql://postgres:5432/studyhub_core
+      DB_USERNAME: ${DB_USER:-studyhub}
+      DB_PASSWORD: ${DB_PASSWORD:-studyhub}
+      APP_JWT_SECRET: ${JWT_SECRET:-change-me-local-dev-secret-change-me}
+      APP_INTERNAL_API_KEY: ${INTERNAL_API_KEY:-change-me-internal-api-key}
+      APP_MESSAGING_ENABLED: "true"
+      APP_POSTS_DIR: /var/lib/studyhub/posts
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USERNAME: ${RABBITMQ_USER:-guest}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-guest}
+      SPRING_PROFILES_ACTIVE: prod
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8081/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    volumes:
+      - studyhub-posts:/var/lib/studyhub/posts
+
+  support-service:
+    build:
+      context: ./backend/support-service
+    container_name: studyhub-support
+    environment:
+      SERVER_PORT: 8082
+      DB_URL: jdbc:postgresql://postgres:5432/studyhub_support
+      DB_USERNAME: ${DB_USER:-studyhub}
+      DB_PASSWORD: ${DB_PASSWORD:-studyhub}
+      CORE_SERVICE_URL: http://core-service:8081
+      APP_JWT_SECRET: ${JWT_SECRET:-change-me-local-dev-secret-change-me}
+      APP_INTERNAL_API_KEY: ${INTERNAL_API_KEY:-change-me-internal-api-key}
+      APP_MESSAGING_ENABLED: "true"
+      APP_ALLOW_DEMO_TOKEN: "false"
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USERNAME: ${RABBITMQ_USER:-guest}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-guest}
+      SPRING_PROFILES_ACTIVE: prod
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      core-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8082/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  user-service:
+    build:
+      context: ./services/user-service
+    container_name: studyhub-user
+    environment:
+      SERVER_PORT: 8083
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: studyhub_users
+      DB_USER: ${DB_USER:-studyhub}
+      DB_PASS: ${DB_PASSWORD:-studyhub}
+      JWT_SECRET: ${JWT_SECRET:-change-me-local-dev-secret-change-me}
+      JWT_EXPIRATION_MS: 86400000
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_PASS: ${RABBITMQ_PASSWORD:-guest}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8083/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  api-gateway:
+    build:
+      context: ./backend/api-gateway
+    container_name: studyhub-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      SERVER_PORT: 8080
+      CORE_SERVICE_URL: http://core-service:8081
+      SUPPORT_SERVICE_URL: http://support-service:8082
+      USER_SERVICE_URL: http://user-service:8083
+    depends_on:
+      user-service:
+        condition: service_healthy
+      core-service:
+        condition: service_healthy
+      support-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8080/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  react-frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_BASE_URL: ${FRONTEND_API_URL:-http://localhost:8080}
+    container_name: studyhub-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      api-gateway:
+        condition: service_healthy
+
+volumes:
+  postgres-data:
+  studyhub-posts:

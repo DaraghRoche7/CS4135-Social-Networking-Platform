@@ -5,9 +5,11 @@ import com.studyhub.userservice.model.RoleName;
 import com.studyhub.userservice.repository.RoleRepository;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 @Component
+@Order(1)
 public class DataInitializer implements ApplicationRunner {
 
     private final RoleRepository roleRepository;

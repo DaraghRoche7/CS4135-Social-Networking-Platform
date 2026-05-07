@@ -2,39 +2,46 @@
 
 ## Overview
 
-This document describes how to run the prototype locally for review/testing.
+StudyHub is deployed as a set of Docker containers orchestrated with Docker Compose. The app is live at
+https://studyhub.college with the API at https://api.studyhub.college.
 
-## Local prototype run
+Pushing to `main` automatically builds and deploys via GitHub Actions.
 
-### Option A: Full Docker (may require stable image pulls)
-- Build services (JARs) and run `docker compose up -d --build`
+---
 
-### Option B (recommended if Docker image pulls are flaky): Docker infra + services local
-Run infrastructure services in Docker, and run Spring services locally.
+## Running Locally
 
-1) Start infra containers:
-- PostgreSQL (port 5432)
-- Redis (port 6379) – provisioned (not required for feed reads)
-- RabbitMQ (ports 5672, 15672)
+**Prerequisites:** Docker Desktop, Git
 
-2) Run Spring services locally:
-- API Gateway: `http://localhost:8080`
-- Core Service: `http://localhost:8081`
-- Support Service: `http://localhost:8082`
-- User Service: `http://localhost:8083`
+```bash
+git clone https://github.com/DaraghRoche7/CS4135-Social-Networking-Platform.git
+cd CS4135-Social-Networking-Platform
 
-3) Run frontend locally:
-- Vite dev server: `http://localhost:5173`
-- Frontend calls the gateway base URL (default `http://localhost:8080`)
+cp .env.example .env
+# Edit .env and set JWT_SECRET, DB_PASSWORD and INTERNAL_API_KEY
 
-### Smoke test (via gateway)
-- Login:
-  - `POST /api/auth/login`
-- Feed:
-  - `GET /api/feed`
+docker compose -f docker-compose.prod.yml up -d --build
+```
 
-## Future work (production)
-- CI/CD pipeline (GitHub Actions) for build/test/deploy
-- Observability (metrics/logging)
-- Gateway rate limiting + horizontal scaling
+Frontend: http://localhost:3000  
+API Gateway: http://localhost:8080
 
+Verify everything is healthy:
+```bash
+docker compose -f docker-compose.prod.yml ps
+```
+
+Stop the stack:
+```bash
+docker compose -f docker-compose.prod.yml down
+```
+
+---
+
+## Production
+
+The app runs on an Oracle Cloud Ubuntu 22.04 server.
+
+NGINX proxies public traffic to the containers and HTTPS is handled by Let's Encrypt.
+
+Deployment is fully automated. Pushing to `main` triggers the GitHub Actions pipeline which builds all Docker images, pushes them to Docker Hub, and restarts the containers on the server.

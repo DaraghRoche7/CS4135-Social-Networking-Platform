@@ -59,7 +59,7 @@ public class SecurityConfig {
     @Bean
     JwtDecoder jwtDecoder(AppProperties appProperties) {
         byte[] secret = appProperties.getSecurity().getJwtSecret().getBytes(StandardCharsets.UTF_8);
-        return NimbusJwtDecoder.withSecretKey(new SecretKeySpec(secret, "HmacSHA256")).build();
+        return NimbusJwtDecoder.withSecretKey(new SecretKeySpec(secret, "HmacSHA512")).build();
     }
 
     @Bean

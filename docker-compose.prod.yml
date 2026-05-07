@@ -145,7 +145,7 @@ services:
       CORE_SERVICE_URL: http://core-service:8081
       SUPPORT_SERVICE_URL: http://support-service:8082
       USER_SERVICE_URL: http://user-service:8083
-      FRONTEND_ORIGIN: ${FRONTEND_API_URL:-http://localhost:3000}
+      FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-http://localhost:3000}
     depends_on:
       user-service:
         condition: service_healthy

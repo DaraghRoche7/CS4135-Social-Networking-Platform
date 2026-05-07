@@ -8,6 +8,7 @@ import java.util.Collection;
 import java.util.List;
 import javax.crypto.spec.SecretKeySpec;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -59,7 +60,7 @@ public class SecurityConfig {
     @Bean
     JwtDecoder jwtDecoder(AppProperties appProperties) {
         byte[] secret = appProperties.getSecurity().getJwtSecret().getBytes(StandardCharsets.UTF_8);
-        return NimbusJwtDecoder.withSecretKey(new SecretKeySpec(secret, "HmacSHA512")).build();
+        return NimbusJwtDecoder.withSecretKey(new SecretKeySpec(secret, "HmacSHA512")).macAlgorithm(MacAlgorithm.HS512).build();
     }
 
     @Bean

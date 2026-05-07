@@ -37,6 +37,7 @@ services:
       retries: 5
 
   core-service:
+    image: ${DOCKER_ORG:-pk12448}/studyhub-core-service:latest
     build:
       context: ./backend/core-service
     container_name: studyhub-core
@@ -69,6 +70,7 @@ services:
       - studyhub-posts:/var/lib/studyhub/posts
 
   support-service:
+    image: ${DOCKER_ORG:-pk12448}/studyhub-support-service:latest
     build:
       context: ./backend/support-service
     container_name: studyhub-support
@@ -102,6 +104,7 @@ services:
       start_period: 30s
 
   user-service:
+    image: ${DOCKER_ORG:-pk12448}/studyhub-user-service:latest
     build:
       context: ./services/user-service
     container_name: studyhub-user
@@ -131,6 +134,7 @@ services:
       start_period: 30s
 
   api-gateway:
+    image: ${DOCKER_ORG:-pk12448}/studyhub-api-gateway:latest
     build:
       context: ./backend/api-gateway
     container_name: studyhub-gateway
@@ -156,6 +160,7 @@ services:
       start_period: 20s
 
   react-frontend:
+    image: ${DOCKER_ORG:-pk12448}/studyhub-frontend:latest
     build:
       context: ./frontend
       args:

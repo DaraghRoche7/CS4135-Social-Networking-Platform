@@ -1,0 +1,109 @@
+name: StudyHub Production CI/CD
+
+on:
+  push:
+    branches: [ "main" ]
+
+env:
+  DOCKER_ORG: ${{ secrets.DOCKER_USERNAME }}
+
+jobs:
+  build-backend:
+    name: Build ${{ matrix.service }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - service: core-service
+            context: ./backend/core-service
+          - service: support-service
+            context: ./backend/support-service
+          - service: api-gateway
+            context: ./backend/api-gateway
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and Push
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ matrix.context }}
+          push: true
+          tags: ${{ env.DOCKER_ORG }}/studyhub-${{ matrix.service }}:latest
+
+  build-user-service:
+    name: Build user-service
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and Push
+        uses: docker/build-push-action@v5
+        with:
+          context: ./services/user-service
+          push: true
+          tags: ${{ env.DOCKER_ORG }}/studyhub-user-service:latest
+
+  build-frontend:
+    name: Build frontend
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and Push
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          push: true
+          tags: ${{ env.DOCKER_ORG }}/studyhub-frontend:latest
+          build-args: |
+            VITE_API_BASE_URL=${{ secrets.PROD_API_URL }}
+
+  deploy-to-prod:
+    name: Deploy to VPS
+    needs: [build-backend, build-user-service, build-frontend]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Copy files to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.PROD_SERVER_IP }}
+          username: ${{ secrets.PROD_SERVER_USER }}
+          key: ${{ secrets.PROD_SSH_KEY }}
+          source: "docker-compose.prod.yml,docker/postgres/init/01-create-databases.sql"
+          target: "/opt/studyhub"
+
+      - name: Deploy on server
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.PROD_SERVER_IP }}
+          username: ${{ secrets.PROD_SERVER_USER }}
+          key: ${{ secrets.PROD_SSH_KEY }}
+          script: |
+            cd /opt/studyhub
+            docker compose -f docker-compose.prod.yml pull
+            docker compose -f docker-compose.prod.yml up -d
+            docker image prune -f
